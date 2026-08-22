@@ -1,112 +1,134 @@
 <div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=502D55&height=250&section=header&text=DayFlow%20HRMS&fontSize=80&fontColor=ffffff&animation=twinkling&fontAlignY=35&desc=The%20Future%20of%20Work%20is%20Here&descAlignY=55&descAlign=50" alt="DayFlow Header" />
   
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=502D55&height=200&section=header&text=DayFlow%20HRMS&fontSize=70&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Modern%20HR%20Management%20for%20the%20Future%20of%20Work&descAlignY=55&descAlign=50" />
-
+  <br />
+  
   <a href="https://github.com/poojamurugan23/Dayflow-Odoo-Hackathon-Virtual">
-    <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=600&size=22&duration=3000&pause=1000&color=935073&center=true&vCenter=true&width=600&lines=Seamless+Employee+Onboarding;Real-time+Attendance+Tracking;Automated+Salary+Calculations;Smart+Leave+Management;Odoo+Hackathon+Virtual+2026" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=600&size=24&duration=4000&pause=1000&color=935073&center=true&vCenter=true&width=800&lines=🚀+Seamless+Employee+Onboarding;⏱️+Real-Time+Attendance+Tracking;💰+Automated+Salary+Calculations;🗓️+Smart+Time-Off+Management;🏆+Built+for+Odoo+Hackathon+Virtual+2026" alt="Typing SVG" />
   </a>
 
   <br />
 
-  ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-  ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
-  ![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
-  ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-  ![Odoo](https://img.shields.io/badge/Odoo-714B67?style=for-the-badge&logo=odoo&logoColor=white)
-
+  <!-- Animated Badges -->
+  <p align="center">
+    <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
+    <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" />
+    <img src="https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" />
+    <img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white" />
+    <img src="https://img.shields.io/badge/Odoo-714B67?style=for-the-badge&logo=odoo&logoColor=white" />
+  </p>
+  
+  <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4520-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
 </div>
 
 <br/>
 
 ## 🌟 About DayFlow
-**DayFlow** is a modern, real-time Human Resource Management System (HRMS) engineered to bridge the gap between complex enterprise resource planning and seamless employee experiences. Designed as part of the **Odoo Hackathon - Virtual**, DayFlow integrates intuitive React-based frontends with a robust backend architecture, ensuring companies can manage their workforce efficiently.
+**DayFlow** is a next-generation **Human Resource Management System (HRMS)** built to transform how companies manage their workforce. Developed as a flagship project for the **Odoo Hackathon - Virtual**, DayFlow bridges the gap between complex ERP systems and beautiful, intuitive user experiences. 
 
-<br/>
+Say goodbye to manual salary spreadsheets and clunky attendance portals. **DayFlow automates everything.**
 
-## 🚀 Key Features
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4520-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
 
-### 👔 Admin Dashboard & Controls
-- **Live Workforce Overview:** Real-time visibility into who is present, absent, or on leave through a dynamic directory grid.
-- **Smart Onboarding & Salary Automation:** Add new employees in seconds. Simply input the *Monthly Wage*, and DayFlow's intelligent calculator instantly distributes Basic Salary (50%), HRA (50%), Standard Allowances, PF, and Professional Tax automatically.
-- **Time-Off Management:** One-click approvals and rejections (with comments) for employee leave requests.
-- **Comprehensive Profiles:** Access sensitive employee data through secure, role-restricted tabs (Resume, Private Info, Salary structure).
+## 🔥 Showstopping Features
 
-### 👨‍💻 Employee Portal
-- **Real-Time Attendance Systray:** Employees can Check-In and Check-Out with a live-running `HH:MM:SS` elapsed timer directly from their dashboard.
-- **Interactive Leave Calendar:** A full 12-month calendar view allowing employees to seamlessly apply for time-off, viewing pending balances and historical requests in real-time.
-- **Status Indicators:** Clear visual cues (Green dot = Present, Grey dot = Absent, Plane icon = On Leave) across the entire platform.
+### 👔 For Administrators (The Command Center)
+> **DayFlow gives HR managers superpowers.**
 
-<br/>
+- 📊 **Real-Time Live Directory:** See exactly who is Present (🟢), Absent (⚪), or On Leave (✈️) instantly. No page refreshes needed.
+- ⚡ **Instant Salary Automation:** Add an employee and input their Monthly Wage. DayFlow's intelligent engine **automatically calculates** Basic (50%), HRA (50%), LTA (8.33%), Performance Bonuses, PF (12%), and Tax deductions instantly in a beautiful preview panel.
+- 📝 **Frictionless Time-Off Workflow:** Approve or reject leave requests with comments in a single click.
+- 🔐 **Secure Role-Based Access:** Protected tabs for Resumes, Salary Info, and Private details—only visible to authorized admins.
 
-## 🛠️ Technology Stack
+### 👨‍💻 For Employees (The Workspace)
+> **A workspace employees will actually love using.**
 
-| Layer | Technology | Description |
-|---|---|---|
-| **Frontend** | React, Vite, Tailwind CSS | High-performance, fully responsive UI wrapped in a sleek Purple & Grey modern design system. |
-| **Backend** | Node.js, Express | Lightning-fast RESTful APIs handling real-time data flow and authentication. |
-| **Database** | MongoDB & Mongoose | Flexible, schema-driven data storage for Payroll, Users, Attendance, and Leaves. |
-| **Icons & Charts** | Lucide-React, Recharts | Beautiful iconography and interactive data visualization. |
+- ⏱️ **Live Attendance Systray:** Employees Check-In and Check-Out with a live, ticking `HH:MM:SS` timer that floats on their dashboard.
+- 📅 **Interactive Leave Calendar:** A stunning 12-month visual calendar showing pending balances and time-off history.
+- 🎨 **Premium UI/UX:** A gorgeous Purple (`#502D55`) & Grey design system with glassmorphism, smooth micro-animations, and hover effects.
 
-<br/>
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4520-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
 
-## 📸 Sneak Peek
+## 💻 Visual Preview
 
 <div align="center">
-  <img src="https://github-production-user-asset-6210df.s3.amazonaws.com/assets/dayflow-dashboard.gif" alt="DayFlow Dashboard Animation" width="800" />
-  <p><em>(Beautiful, responsive interface designed with the user in mind)</em></p>
+  <img src="https://cdn.dribbble.com/users/2064121/screenshots/18257313/media/41e4c798e26bc4bf8f700057208152f8.gif" alt="HR Dashboard Animation" width="850" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);" />
+  <p><em>(Conceptual representation of DayFlow's smooth, animated interface)</em></p>
 </div>
 
 <br/>
 
-## ⚙️ Installation & Setup
+## 🛠️ Technology Stack
+<table align="center">
+  <tr>
+    <td align="center" width="96">
+      <img src="https://techstack-generator.vercel.app/react-icon.svg" alt="React" width="48" height="48" />
+      <br>React
+    </td>
+    <td align="center" width="96">
+      <img src="https://techstack-generator.vercel.app/js-icon.svg" alt="JavaScript" width="48" height="48" />
+      <br>JavaScript
+    </td>
+    <td align="center" width="96">
+      <img src="https://skillicons.dev/icons?i=tailwind" alt="Tailwind CSS" width="48" height="48" />
+      <br>Tailwind
+    </td>
+    <td align="center" width="96">
+      <img src="https://skillicons.dev/icons?i=nodejs" alt="Node.js" width="48" height="48" />
+      <br>Node.js
+    </td>
+    <td align="center" width="96">
+      <img src="https://skillicons.dev/icons?i=express" alt="Express" width="48" height="48" />
+      <br>Express
+    </td>
+    <td align="center" width="96">
+      <img src="https://skillicons.dev/icons?i=mongodb" alt="MongoDB" width="48" height="48" />
+      <br>MongoDB
+    </td>
+  </tr>
+</table>
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/poojamurugan23/Dayflow-Odoo-Hackathon-Virtual.git
-   cd Dayflow-Odoo-Hackathon-Virtual
-   ```
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4520-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
 
-2. **Install Client Dependencies**
-   ```bash
-   npm install
-   ```
+## 🚀 Quick Start Guide
 
-3. **Install Server Dependencies**
-   ```bash
-   cd server
-   npm install
-   ```
+**1. Clone & Enter**
+```bash
+git clone https://github.com/poojamurugan23/Dayflow-Odoo-Hackathon-Virtual.git
+cd Dayflow-Odoo-Hackathon-Virtual
+```
 
-4. **Environment Variables**
-   Create a `.env` file in the `/server` directory and configure your MongoDB URI and JWT secrets.
-   ```env
-   PORT=5000
-   MONGO_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
-   ```
+**2. Install Everything**
+```bash
+# Install Frontend
+npm install
 
-5. **Run the Application (Concurrent)**
-   Open two terminals:
-   ```bash
-   # Terminal 1 - Start the backend server
-   cd server
-   npm run dev
-   
-   # Terminal 2 - Start the frontend client
-   npm run dev
-   ```
+# Install Backend
+cd server
+npm install
+```
 
-<br/>
+**3. Configure Environment**
+Create a `.env` in the `/server` directory:
+```env
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=super_secret_jwt_key
+```
 
-## 🛡️ Architecture & Security
-DayFlow implements robust JWT-based authentication combined with secure Role-Based Access Control (RBAC). A custom `<ProtectedRoute />` component ensures that Admin-only routes (like Payroll and Employee Onboarding) are strictly shielded from standard users, maintaining complete data integrity and privacy.
+**4. Ignite the Engines 🚀**
+```bash
+# Terminal 1 (Backend)
+cd server && npm run dev
 
-<br/>
+# Terminal 2 (Frontend)
+npm run dev
+```
 
----
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4520-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
 
 <div align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=502D55&height=100&section=footer" />
-  <br/>
-  <b>Built with ❤️ for the Odoo Hackathon</b>
+  <h2>🏆 Crafted for the Odoo Hackathon</h2>
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=502D55&height=120&section=footer" />
 </div>
