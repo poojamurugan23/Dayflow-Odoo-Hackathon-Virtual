@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Top Root Menu -->
+        <menuitem id="menu_dayflow_root"
+                  name="Dayflow HRMS"
+                  sequence="10"/>
+
+        <!-- Main Categories -->
+        <menuitem id="menu_dayflow_employees_root"
+                  name="Employees"
+                  parent="menu_dayflow_root"
+                  sequence="10"/>
+
+        <!-- Action Menu Item -->
+        <menuitem id="menu_dayflow_employees_all"
+                  name="All Employees"
+                  parent="menu_dayflow_employees_root"
+                  action="action_dayflow_employee"
+                  sequence="10"/>
+
+    </data>
+</odoo>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Minimal Test Employee 1: System Admin / HR Manager -->
+        <record id="demo_employee_admin" model="dayflow.employee">
+            <field name="name">Administrator</field>
+            <field name="employee_id">OI20260001</field>
+            <field name="email">admin@dayflow.local</field>
+            <field name="phone">+1 555-0100</field>
+            <field name="job_position">HR Director</field>
+            <field name="department">Human Resources</field>
+            <field name="joining_date">2026-01-01</field>
+            <field name="user_id" ref="base.user_admin"/>
+        </record>
+
+        <!-- Minimal Test Employee 2: Test Standard Employee -->
+        <record id="demo_employee_alex" model="dayflow.employee">
+            <field name="name">Alex Morgan</field>
+            <field name="employee_id">OI20260002</field>
+            <field name="email">alex.morgan@dayflow.local</field>
+            <field name="phone">+1 555-0102</field>
+            <field name="job_position">Senior Software Engineer</field>
+            <field name="department">Engineering</field>
+            <field name="joining_date">2026-02-15</field>
+        </record>
+
+    </data>
+</odoo>
