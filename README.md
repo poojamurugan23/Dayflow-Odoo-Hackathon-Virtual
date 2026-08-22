@@ -1,134 +1,169 @@
-<div align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=502D55&height=250&section=header&text=DayFlow%20HRMS&fontSize=80&fontColor=ffffff&animation=twinkling&fontAlignY=35&desc=The%20Future%20of%20Work%20is%20Here&descAlignY=55&descAlign=50" alt="DayFlow Header" />
-  
-  <br />
-  
-  <a href="https://github.com/poojamurugan23/Dayflow-Odoo-Hackathon-Virtual">
-    <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=600&size=24&duration=4000&pause=1000&color=935073&center=true&vCenter=true&width=800&lines=🚀+Seamless+Employee+Onboarding;⏱️+Real-Time+Attendance+Tracking;💰+Automated+Salary+Calculations;🗓️+Smart+Time-Off+Management;🏆+Built+for+Odoo+Hackathon+Virtual+2026" alt="Typing SVG" />
-  </a>
+# Dayflow — Human Resource Management System
 
-  <br />
+> Every workday, perfectly aligned.
 
-  <!-- Animated Badges -->
-  <p align="center">
-    <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
-    <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" />
-    <img src="https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white" />
-    <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" />
-    <img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white" />
-    <img src="https://img.shields.io/badge/Odoo-714B67?style=for-the-badge&logo=odoo&logoColor=white" />
-  </p>
-  
-  <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4520-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
-</div>
+Identity, presence, absence, and compensation as **one** record. Attendance and
+approved leave *feed* payroll rather than sitting beside it — that connection is
+the product thesis, not a bonus feature.
 
-<br/>
+**Status: Phase 0 complete.** Foundation, schema, seed, and first deploy. No
+feature UI yet.
 
-## 🌟 About DayFlow
-**DayFlow** is a next-generation **Human Resource Management System (HRMS)** built to transform how companies manage their workforce. Developed as a flagship project for the **Odoo Hackathon - Virtual**, DayFlow bridges the gap between complex ERP systems and beautiful, intuitive user experiences. 
+---
 
-Say goodbye to manual salary spreadsheets and clunky attendance portals. **DayFlow automates everything.**
+## Stack
 
-<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4520-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 15 (App Router) + TypeScript, strict |
+| Styling | Tailwind CSS v4 + shadcn/ui |
+| Database / Auth / Storage | Supabase (Postgres with RLS) |
+| Supabase adapter | `@supabase/ssr` |
+| Deploy | Vercel |
 
-## 🔥 Showstopping Features
+Authorization lives in Postgres RLS policies, not in application `if`
+statements. Attendance status is **derived by a view**, never stored — so leave
+approval and attendance cannot disagree.
 
-### 👔 For Administrators (The Command Center)
-> **DayFlow gives HR managers superpowers.**
+---
 
-- 📊 **Real-Time Live Directory:** See exactly who is Present (🟢), Absent (⚪), or On Leave (✈️) instantly. No page refreshes needed.
-- ⚡ **Instant Salary Automation:** Add an employee and input their Monthly Wage. DayFlow's intelligent engine **automatically calculates** Basic (50%), HRA (50%), LTA (8.33%), Performance Bonuses, PF (12%), and Tax deductions instantly in a beautiful preview panel.
-- 📝 **Frictionless Time-Off Workflow:** Approve or reject leave requests with comments in a single click.
-- 🔐 **Secure Role-Based Access:** Protected tabs for Resumes, Salary Info, and Private details—only visible to authorized admins.
+## Environment variables
 
-### 👨‍💻 For Employees (The Workspace)
-> **A workspace employees will actually love using.**
+Get all three from **Supabase Dashboard → Project Settings → API**.
 
-- ⏱️ **Live Attendance Systray:** Employees Check-In and Check-Out with a live, ticking `HH:MM:SS` timer that floats on their dashboard.
-- 📅 **Interactive Leave Calendar:** A stunning 12-month visual calendar showing pending balances and time-off history.
-- 🎨 **Premium UI/UX:** A gorgeous Purple (`#502D55`) & Grey design system with glassmorphism, smooth micro-animations, and hover effects.
+| Variable | Where it goes | Exposed to browser? | Notes |
+|---|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | `.env.local` **and** Vercel | Yes | Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `.env.local` **and** Vercel | Yes | Safe: every query it makes is still filtered by RLS |
+| `SUPABASE_SERVICE_ROLE_KEY` | `.env.local` **and** Vercel | **No — server only** | See the warning below |
 
-<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4520-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
+> ### ⚠ `SUPABASE_SERVICE_ROLE_KEY` bypasses RLS completely
+>
+> This key ignores every row-level security policy. Anyone holding it can read
+> every salary, PAN number, and bank account in the database.
+>
+> - **Never** prefix it with `NEXT_PUBLIC_`. That would ship it to the browser.
+> - **Never** import it into a Client Component or any file with `"use client"`.
+> - It is used only by `scripts/create-auth-users.mjs` and, from Phase 2, by the
+>   server action that creates employees.
+> - `.env.local` is gitignored. Keep it that way. `.env.example` is the
+>   committed template and holds no values.
 
-## 💻 Visual Preview
+Anything named `NEXT_PUBLIC_*` is inlined into the client bundle at build time.
+That is fine for the URL and anon key, and fatal for the service role key.
 
-<div align="center">
-  <img src="https://cdn.dribbble.com/users/2064121/screenshots/18257313/media/41e4c798e26bc4bf8f700057208152f8.gif" alt="HR Dashboard Animation" width="850" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);" />
-  <p><em>(Conceptual representation of DayFlow's smooth, animated interface)</em></p>
-</div>
+---
 
-<br/>
+## Setup
 
-## 🛠️ Technology Stack
-<table align="center">
-  <tr>
-    <td align="center" width="96">
-      <img src="https://techstack-generator.vercel.app/react-icon.svg" alt="React" width="48" height="48" />
-      <br>React
-    </td>
-    <td align="center" width="96">
-      <img src="https://techstack-generator.vercel.app/js-icon.svg" alt="JavaScript" width="48" height="48" />
-      <br>JavaScript
-    </td>
-    <td align="center" width="96">
-      <img src="https://skillicons.dev/icons?i=tailwind" alt="Tailwind CSS" width="48" height="48" />
-      <br>Tailwind
-    </td>
-    <td align="center" width="96">
-      <img src="https://skillicons.dev/icons?i=nodejs" alt="Node.js" width="48" height="48" />
-      <br>Node.js
-    </td>
-    <td align="center" width="96">
-      <img src="https://skillicons.dev/icons?i=express" alt="Express" width="48" height="48" />
-      <br>Express
-    </td>
-    <td align="center" width="96">
-      <img src="https://skillicons.dev/icons?i=mongodb" alt="MongoDB" width="48" height="48" />
-      <br>MongoDB
-    </td>
-  </tr>
-</table>
-
-<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4520-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
-
-## 🚀 Quick Start Guide
-
-**1. Clone & Enter**
 ```bash
-git clone https://github.com/poojamurugan23/Dayflow-Odoo-Hackathon-Virtual.git
-cd Dayflow-Odoo-Hackathon-Virtual
-```
-
-**2. Install Everything**
-```bash
-# Install Frontend
 npm install
-
-# Install Backend
-cd server
-npm install
+cp .env.example .env.local      # then fill in the three values
 ```
 
-**3. Configure Environment**
-Create a `.env` in the `/server` directory:
-```env
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=super_secret_jwt_key
-```
+### 1. Run the migration
 
-**4. Ignite the Engines 🚀**
+Supabase Dashboard → **SQL Editor** → **New query** → paste all of
+`supabase/migrations/0001_init.sql` → **Run**.
+
+Creates 13 tables, 2 enums, `generate_login_id()`, the three derivation views,
+and enables RLS with 6 policies.
+
+### 2. Create the auth users
+
 ```bash
-# Terminal 1 (Backend)
-cd server && npm run dev
-
-# Terminal 2 (Frontend)
-npm run dev
+npm run seed:auth
 ```
 
-<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4520-a447-11eb-908a-139a6edaec5c.gif" width="100%" />
+`profiles.id` references `auth.users`, so the auth rows must exist before the
+seed can insert profiles. This uses the Supabase admin API, which is the only
+reliable way to produce users that can actually log in.
 
-<div align="center">
-  <h2>🏆 Crafted for the Odoo Hackathon</h2>
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=502D55&height=120&section=footer" />
-</div>
+### 3. Run the seed
+
+Supabase SQL Editor → paste all of `supabase/seed.sql` → **Run**.
+
+It matches profiles to auth users **by email**, so no UUID is ever copied by
+hand. Safe to re-run; it wipes HRMS data first and leaves `auth.users` alone.
+
+### 4. Develop
+
+```bash
+npm run dev          # http://localhost:3000
+npm run typecheck
+npm run lint
+npm run build
+```
+
+---
+
+## Demo logins
+
+All seeded users share the password **`Dayflow@2026`**.
+Sign-in accepts either the login ID or the email (Phase 1).
+
+| Login ID | Name | Role | Email |
+|---|---|---|---|
+| `OIPRSH20210001` | Priya Sharma | **admin** | priya.sharma@odooindia.example |
+| `OIARNA20210002` | Arjun Nair | employee | arjun.nair@odooindia.example |
+| `OIRAVE20220001` | Rahul Verma | employee | rahul.verma@odooindia.example |
+| `OISNIY20220002` | Sneha Iyer | employee | sneha.iyer@odooindia.example |
+| `OIVISI20230001` | Vikram Singh | employee | vikram.singh@odooindia.example |
+| `OIMEKR20230002` | Meera Krishnan | employee | meera.krishnan@odooindia.example |
+| `OIKARE20240001` | Karthik Reddy | employee | karthik.reddy@odooindia.example |
+
+Karthik Reddy is seeded with `must_change_password = true` so Phase 1's forced
+password-change screen has a test subject.
+
+**Login ID format** — `OIPRSH20210001` = org code `OI` + first two letters of
+first and last name + year of joining + 4-digit serial for that year.
+
+---
+
+## Keepalive
+
+Supabase's free tier pauses after ~7 days of inactivity, so a judge opening the
+link on day 9 would get a dead app. `.github/workflows/keepalive.yml` pings the
+REST API daily at 06:00 UTC.
+
+It needs two **GitHub** repository secrets (Settings → Secrets and variables →
+Actions): `SUPABASE_URL` and `SUPABASE_ANON_KEY`. Note these names have no
+`NEXT_PUBLIC_` prefix — they are GitHub secrets, not Vercel env vars.
+
+---
+
+## Layout
+
+```
+app/
+  (auth)/sign-in · sign-up · change-password      Phase 1
+  (app)/employees · attendance · time-off         Phases 2-4
+  api/upload                                      Phase 2
+lib/supabase/server.ts · client.ts                @supabase/ssr clients
+lib/salary.ts · attendance.ts                     Phases 5 · 3
+actions/                                          server actions
+components/ui/                                    shadcn, restyled
+supabase/migrations/0001_init.sql · seed.sql
+scripts/create-auth-users.mjs
+```
+
+Empty directories are placeholders from the master plan's Appendix B so later
+phases have a home.
+
+---
+
+## Reference documents
+
+- `dayflow-build-plan.md` — the authoritative SQL (Parts 1–3)
+- `dayflow-claude-design-prompts.md` — screen-by-screen design intent
+- `Dayflow - Human Resource Management System.pdf` — original SRS
+
+The master plan (`dayflow-master-plan.md`, kept outside this repo) supersedes
+the build plan where they disagree. Two deliberate deviations from the SRS:
+
+1. **No self-registration.** The SRS lets anyone sign up and pick the HR role,
+   which would let anyone read every salary in the company. Replaced with
+   admin-invite onboarding.
+2. **Fixed Allowance is the remainder.** The wireframe shows ₹2,918 (11.67%),
+   but `wage − sum(components)` = ₹4,168. The remainder rule is used so the
+   validation strip balances at ₹50,000 / ₹50,000.
