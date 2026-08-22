@@ -1,0 +1,692 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Dayflow HRMS Auth Base Head & Assets -->
+    <template id="dayflow_auth_layout" name="Dayflow Auth Layout">
+        &lt;!DOCTYPE html&gt;
+        <html lang="en">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                <title><t t-esc="title or 'Dayflow HRMS - Modern Human Resource Management'"/></title>
+                <link rel="preconnect" href="https://fonts.googleapis.com"/>
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=Outfit:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+                <style>
+                    :root {
+                        --primary: #6366f1;
+                        --primary-hover: #4f46e5;
+                        --primary-glow: rgba(99, 102, 241, 0.35);
+                        --bg-dark: #090d16;
+                        --card-bg: rgba(17, 24, 39, 0.82);
+                        --card-border: rgba(255, 255, 255, 0.08);
+                        --text-main: #f8fafc;
+                        --text-muted: #94a3b8;
+                        --input-bg: rgba(15, 23, 42, 0.65);
+                        --input-border: rgba(255, 255, 255, 0.12);
+                    }
+
+                    * {
+                        box-sizing: border-box;
+                        margin: 0;
+                        padding: 0;
+                    }
+
+                    body {
+                        font-family: 'Inter', sans-serif;
+                        background: radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.18) 0%, transparent 45%),
+                                    radial-gradient(circle at 85% 85%, rgba(168, 85, 247, 0.15) 0%, transparent 45%),
+                                    var(--bg-dark);
+                        color: var(--text-main);
+                        min-height: 100vh;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 24px 16px;
+                        position: relative;
+                        overflow-x: hidden;
+                    }
+
+                    /* Ambient blur spheres */
+                    .ambient-blur-1 {
+                        position: absolute;
+                        width: 450px;
+                        height: 450px;
+                        background: radial-gradient(circle, rgba(99, 102, 241, 0.25), transparent 70%);
+                        top: -100px;
+                        left: -100px;
+                        border-radius: 50%;
+                        filter: blur(80px);
+                        pointer-events: none;
+                        z-index: 0;
+                    }
+
+                    .ambient-blur-2 {
+                        position: absolute;
+                        width: 400px;
+                        height: 400px;
+                        background: radial-gradient(circle, rgba(147, 51, 234, 0.2), transparent 70%);
+                        bottom: -80px;
+                        right: -80px;
+                        border-radius: 50%;
+                        filter: blur(80px);
+                        pointer-events: none;
+                        z-index: 0;
+                    }
+
+                    .auth-container {
+                        width: 100%;
+                        max-width: 480px;
+                        position: relative;
+                        z-index: 1;
+                        animation: fadeIn 0.4s ease-out;
+                    }
+
+                    .auth-container.signup-container {
+                        max-width: 580px;
+                    }
+
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateY(16px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+
+                    .auth-card {
+                        background: var(--card-bg);
+                        backdrop-filter: blur(20px);
+                        -webkit-backdrop-filter: blur(20px);
+                        border: 1px solid var(--card-border);
+                        border-radius: 24px;
+                        padding: 38px 36px;
+                        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4),
+                                    0 0 0 1px rgba(255, 255, 255, 0.05);
+                    }
+
+                    .brand-header {
+                        text-align: center;
+                        margin-bottom: 28px;
+                    }
+
+                    .logo-icon-wrap {
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 56px;
+                        height: 56px;
+                        border-radius: 16px;
+                        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                        box-shadow: 0 8px 24px var(--primary-glow);
+                        margin-bottom: 14px;
+                        color: white;
+                        font-size: 24px;
+                    }
+
+                    .brand-title {
+                        font-family: 'Outfit', sans-serif;
+                        font-size: 28px;
+                        font-weight: 800;
+                        letter-spacing: -0.5px;
+                        background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        margin-bottom: 4px;
+                    }
+
+                    .brand-subtitle {
+                        font-size: 14px;
+                        color: var(--text-muted);
+                        font-weight: 400;
+                    }
+
+                    .alert {
+                        padding: 14px 16px;
+                        border-radius: 14px;
+                        font-size: 14px;
+                        margin-bottom: 20px;
+                        display: flex;
+                        align-items: flex-start;
+                        gap: 12px;
+                        line-height: 1.4;
+                    }
+
+                    .alert-danger {
+                        background: rgba(239, 68, 68, 0.15);
+                        border: 1px solid rgba(239, 68, 68, 0.3);
+                        color: #fca5a5;
+                    }
+
+                    .alert-success {
+                        background: rgba(34, 197, 94, 0.15);
+                        border: 1px solid rgba(34, 197, 94, 0.3);
+                        color: #86efac;
+                    }
+
+                    .form-group {
+                        margin-bottom: 18px;
+                    }
+
+                    .form-label {
+                        display: block;
+                        font-size: 13px;
+                        font-weight: 500;
+                        color: #cbd5e1;
+                        margin-bottom: 7px;
+                    }
+
+                    .form-row {
+                        display: flex;
+                        gap: 14px;
+                    }
+
+                    .form-row .form-group {
+                        flex: 1;
+                    }
+
+                    .input-wrapper {
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                    }
+
+                    .input-icon {
+                        position: absolute;
+                        left: 16px;
+                        color: #64748b;
+                        font-size: 15px;
+                        pointer-events: none;
+                        transition: color 0.2s ease;
+                    }
+
+                    .form-control {
+                        width: 100%;
+                        height: 48px;
+                        padding: 0 16px 0 46px;
+                        font-family: inherit;
+                        font-size: 14px;
+                        color: #f8fafc;
+                        background: var(--input-bg);
+                        border: 1px solid var(--input-border);
+                        border-radius: 14px;
+                        outline: none;
+                        transition: all 0.2s ease;
+                    }
+
+                    .form-control:focus {
+                        border-color: var(--primary);
+                        box-shadow: 0 0 0 3px var(--primary-glow);
+                        background: rgba(15, 23, 42, 0.85);
+                    }
+
+                    .input-wrapper:focus-within .input-icon {
+                        color: var(--primary);
+                    }
+
+                    .password-toggle-btn {
+                        position: absolute;
+                        right: 14px;
+                        background: none;
+                        border: none;
+                        color: #64748b;
+                        cursor: pointer;
+                        padding: 6px;
+                        font-size: 15px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: color 0.2s ease;
+                    }
+
+                    .password-toggle-btn:hover {
+                        color: #cbd5e1;
+                    }
+
+                    /* Logo upload preview box */
+                    .logo-upload-box {
+                        border: 2px dashed rgba(255, 255, 255, 0.15);
+                        border-radius: 16px;
+                        padding: 16px;
+                        text-align: center;
+                        background: rgba(15, 23, 42, 0.4);
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        position: relative;
+                    }
+
+                    .logo-upload-box:hover {
+                        border-color: var(--primary);
+                        background: rgba(99, 102, 241, 0.05);
+                    }
+
+                    .logo-preview-img {
+                        max-height: 54px;
+                        max-width: 160px;
+                        object-fit: contain;
+                        display: none;
+                        margin: 0 auto 6px auto;
+                    }
+
+                    .upload-prompt-text {
+                        font-size: 13px;
+                        color: #94a3b8;
+                    }
+
+                    .upload-prompt-sub {
+                        font-size: 11px;
+                        color: #64748b;
+                        margin-top: 2px;
+                    }
+
+                    .btn-submit {
+                        width: 100%;
+                        height: 50px;
+                        background: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+                        border: none;
+                        border-radius: 14px;
+                        color: white;
+                        font-family: 'Outfit', sans-serif;
+                        font-size: 15px;
+                        font-weight: 700;
+                        letter-spacing: 0.5px;
+                        text-transform: uppercase;
+                        cursor: pointer;
+                        box-shadow: 0 10px 25px var(--primary-glow);
+                        transition: all 0.25s ease;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 10px;
+                        margin-top: 24px;
+                    }
+
+                    .btn-submit:hover {
+                        background: linear-gradient(135deg, #4f46e5 0%, #6d28d9 100%);
+                        box-shadow: 0 12px 30px rgba(99, 102, 241, 0.5);
+                        transform: translateY(-1px);
+                    }
+
+                    .btn-submit:active {
+                        transform: translateY(1px);
+                    }
+
+                    .auth-footer {
+                        text-align: center;
+                        margin-top: 22px;
+                        font-size: 13.5px;
+                        color: var(--text-muted);
+                    }
+
+                    .auth-footer a {
+                        color: #818cf8;
+                        text-decoration: none;
+                        font-weight: 600;
+                        transition: color 0.2s ease;
+                    }
+
+                    .auth-footer a:hover {
+                        color: #a5b4fc;
+                        text-decoration: underline;
+                    }
+
+                    .spinner {
+                        display: none;
+                        width: 18px;
+                        height: 18px;
+                        border: 2.5px solid rgba(255, 255, 255, 0.3);
+                        border-top-color: #ffffff;
+                        border-radius: 50%;
+                        animation: spin 0.6s linear infinite;
+                    }
+
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+
+                    .security-notice {
+                        background: rgba(99, 102, 241, 0.08);
+                        border: 1px solid rgba(99, 102, 241, 0.2);
+                        padding: 10px 14px;
+                        border-radius: 12px;
+                        font-size: 12px;
+                        color: #a5b4fc;
+                        margin-bottom: 20px;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    }
+
+                    @media (max-width: 540px) {
+                        .auth-card {
+                            padding: 28px 20px;
+                            border-radius: 20px;
+                        }
+                        .form-row {
+                            flex-direction: column;
+                            gap: 0;
+                        }
+                        .brand-title {
+                            font-size: 24px;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="ambient-blur-1"></div>
+                <div class="ambient-blur-2"></div>
+                <t t-raw="0"/>
+                
+                <script>
+                    function togglePassword(fieldId, btnId) {
+                        const input = document.getElementById(fieldId);
+                        const btn = document.getElementById(btnId);
+                        if (!input || !btn) return;
+                        
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            btn.innerHTML = '&lt;i class="fa fa-eye-slash"&gt;&lt;/i&gt;';
+                        } else {
+                            input.type = 'password';
+                            btn.innerHTML = '&lt;i class="fa fa-eye"&gt;&lt;/i&gt;';
+                        }
+                    }
+
+                    function previewLogo(event) {
+                        const file = event.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const preview = document.getElementById('logoPreview');
+                                const promptText = document.getElementById('uploadPromptText');
+                                if (preview) {
+                                    preview.src = e.target.result;
+                                    preview.style.display = 'block';
+                                }
+                                if (promptText) {
+                                    promptText.textContent = file.name;
+                                }
+                            }
+                            reader.readAsDataURL(file);
+                        }
+                    }
+
+                    function showLoading(btnId, spinnerId) {
+                        const btn = document.getElementById(btnId);
+                        const spinner = document.getElementById(spinnerId);
+                        if (btn &amp;&amp; spinner) {
+                            btn.style.opacity = '0.85';
+                            spinner.style.display = 'inline-block';
+                        }
+                    }
+                </script>
+            </body>
+        </html>
+    </template>
+
+    <!-- Dayflow Sign In Template -->
+    <template id="dayflow_login_template" name="Dayflow Sign In">
+        <t t-call="dayflow_hrms.dayflow_auth_layout">
+            <div class="auth-container">
+                <div class="auth-card">
+                    <!-- Brand Header -->
+                    <div class="brand-header">
+                        <div class="logo-icon-wrap">
+                            <i class="fa fa-cubes"></i>
+                        </div>
+                        <h1 class="brand-title">Dayflow</h1>
+                        <p class="brand-subtitle">Human Resource Management System</p>
+                    </div>
+
+                    <!-- Alerts -->
+                    <t t-if="error">
+                        <div class="alert alert-danger">
+                            <i class="fa fa-circle-exclamation mt-1"></i>
+                            <div><t t-esc="error"/></div>
+                        </div>
+                    </t>
+
+                    <t t-if="success or msg">
+                        <div class="alert alert-success">
+                            <i class="fa fa-circle-check mt-1"></i>
+                            <div><t t-esc="msg or 'Operation completed successfully!'"/></div>
+                        </div>
+                    </t>
+
+                    <!-- Sign In Form -->
+                    <form method="POST" action="/dayflow/login" onsubmit="showLoading('signInBtn', 'signInSpinner')">
+                        <input type="hidden" name="redirect" t-att-value="redirect or '/web'"/>
+                        <input type="hidden" name="db" t-att-value="db or ''"/>
+
+                        <!-- Login ID / Email -->
+                        <div class="form-group">
+                            <label class="form-label" for="loginInput">Login ID or Work Email</label>
+                            <div class="input-wrapper">
+                                <i class="fa fa-user input-icon"></i>
+                                <input type="text"
+                                       id="loginInput"
+                                       name="login"
+                                       class="form-control"
+                                       placeholder="e.g. OIJODO20260001 or name@company.com"
+                                       t-att-value="login or ''"
+                                       required="required"
+                                       autofocus="autofocus"/>
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="form-group">
+                            <label class="form-label" for="passwordInput">Password</label>
+                            <div class="input-wrapper">
+                                <i class="fa fa-lock input-icon"></i>
+                                <input type="password"
+                                       id="passwordInput"
+                                       name="password"
+                                       class="form-control"
+                                       placeholder="Enter your password"
+                                       required="required"/>
+                                <button type="button"
+                                        id="toggleLoginPasswordBtn"
+                                        class="password-toggle-btn"
+                                        onclick="togglePassword('passwordInput', 'toggleLoginPasswordBtn')"
+                                        title="Show / Hide Password">
+                                    <i class="fa fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" id="signInBtn" class="btn-submit">
+                            <span class="spinner" id="signInSpinner"></span>
+                            <span>SIGN IN</span>
+                        </button>
+                    </form>
+
+                    <!-- Footer Navigation -->
+                    <div class="auth-footer">
+                        Don't have an account? <a href="/dayflow/signup">Sign Up</a>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Dayflow Company Sign Up Template (Initial Setup) -->
+    <template id="dayflow_signup_template" name="Dayflow Company Sign Up">
+        <t t-call="dayflow_hrms.dayflow_auth_layout">
+            <div class="auth-container signup-container">
+                <div class="auth-card">
+                    <!-- Brand Header -->
+                    <div class="brand-header">
+                        <div class="logo-icon-wrap">
+                            <i class="fa fa-building"></i>
+                        </div>
+                        <h1 class="brand-title">Create Organization</h1>
+                        <p class="brand-subtitle">Set up your company &amp; Initial HR/Admin account</p>
+                    </div>
+
+                    <!-- Security / Onboarding Notice -->
+                    <div class="security-notice">
+                        <i class="fa fa-shield-halved"></i>
+                        <span>Initial Company &amp; HR Admin Setup. Employees are onboarded inside the HRMS.</span>
+                    </div>
+
+                    <!-- Alerts -->
+                    <t t-if="error">
+                        <div class="alert alert-danger">
+                            <i class="fa fa-circle-exclamation mt-1"></i>
+                            <div><t t-esc="error"/></div>
+                        </div>
+                    </t>
+
+                    <!-- Registration Form -->
+                    <form method="POST" action="/dayflow/signup" enctype="multipart/form-data" onsubmit="showLoading('signUpBtn', 'signUpSpinner')">
+                        
+                        <!-- Company Name -->
+                        <div class="form-group">
+                            <label class="form-label" for="companyName">Company Name <span class="text-danger">*</span></label>
+                            <div class="input-wrapper">
+                                <i class="fa fa-building input-icon"></i>
+                                <input type="text"
+                                       id="companyName"
+                                       name="company_name"
+                                       class="form-control"
+                                       placeholder="e.g. Acme Innovations Corp"
+                                       t-att-value="company_name or ''"
+                                       required="required"
+                                       autofocus="autofocus"/>
+                            </div>
+                        </div>
+
+                        <!-- Company Logo Upload -->
+                        <div class="form-group">
+                            <label class="form-label">Company Logo (Optional)</label>
+                            <label class="logo-upload-box" for="companyLogo">
+                                <img id="logoPreview" class="logo-preview-img" alt="Logo Preview"/>
+                                <div id="uploadPromptText" class="upload-prompt-text">
+                                    <i class="fa fa-cloud-arrow-up me-1"></i> Click to upload logo image
+                                </div>
+                                <div class="upload-prompt-sub">PNG, JPG, SVG up to 5MB</div>
+                                <input type="file"
+                                       id="companyLogo"
+                                       name="company_logo"
+                                       accept="image/*"
+                                       style="display:none;"
+                                       onchange="previewLogo(event)"/>
+                            </label>
+                        </div>
+
+                        <!-- HR / Admin Name (First & Last) -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="firstName">First Name <span class="text-danger">*</span></label>
+                                <div class="input-wrapper">
+                                    <i class="fa fa-user input-icon"></i>
+                                    <input type="text"
+                                           id="firstName"
+                                           name="first_name"
+                                           class="form-control"
+                                           placeholder="e.g. John"
+                                           t-att-value="first_name or ''"
+                                           required="required"/>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="lastName">Last Name <span class="text-danger">*</span></label>
+                                <div class="input-wrapper">
+                                    <i class="fa fa-user input-icon"></i>
+                                    <input type="text"
+                                           id="lastName"
+                                           name="last_name"
+                                           class="form-control"
+                                           placeholder="e.g. Doe"
+                                           t-att-value="last_name or ''"
+                                           required="required"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Work Email & Phone -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="email">Work Email <span class="text-danger">*</span></label>
+                                <div class="input-wrapper">
+                                    <i class="fa fa-envelope input-icon"></i>
+                                    <input type="email"
+                                           id="email"
+                                           name="email"
+                                           class="form-control"
+                                           placeholder="admin@company.com"
+                                           t-att-value="email or ''"
+                                           required="required"/>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="phone">Phone Number</label>
+                                <div class="input-wrapper">
+                                    <i class="fa fa-phone input-icon"></i>
+                                    <input type="tel"
+                                           id="phone"
+                                           name="phone"
+                                           class="form-control"
+                                           placeholder="+1 555-0199"
+                                           t-att-value="phone or ''"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Password & Confirm Password -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="password">Password <span class="text-danger">*</span></label>
+                                <div class="input-wrapper">
+                                    <i class="fa fa-lock input-icon"></i>
+                                    <input type="password"
+                                           id="password"
+                                           name="password"
+                                           class="form-control"
+                                           placeholder="At least 6 characters"
+                                           required="required"/>
+                                    <button type="button"
+                                            id="togglePassBtn"
+                                            class="password-toggle-btn"
+                                            onclick="togglePassword('password', 'togglePassBtn')"
+                                            title="Show / Hide Password">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="confirmPassword">Confirm Password <span class="text-danger">*</span></label>
+                                <div class="input-wrapper">
+                                    <i class="fa fa-lock input-icon"></i>
+                                    <input type="password"
+                                           id="confirmPassword"
+                                           name="confirm_password"
+                                           class="form-control"
+                                           placeholder="Re-enter password"
+                                           required="required"/>
+                                    <button type="button"
+                                            id="toggleConfirmBtn"
+                                            class="password-toggle-btn"
+                                            onclick="togglePassword('confirmPassword', 'toggleConfirmBtn')"
+                                            title="Show / Hide Password">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" id="signUpBtn" class="btn-submit">
+                            <span class="spinner" id="signUpSpinner"></span>
+                            <span>SIGN UP</span>
+                        </button>
+                    </form>
+
+                    <!-- Footer Navigation -->
+                    <div class="auth-footer">
+                        Already have an account? <a href="/dayflow/login">Sign In</a>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>
