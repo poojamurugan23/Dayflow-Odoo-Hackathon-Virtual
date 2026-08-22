@@ -28,6 +28,7 @@ Features in Step 1:
         'security/dayflow_security.xml',
         'security/ir.model.access.csv',
         'views/dayflow_employee_views.xml',
+        'views/dayflow_attendance_views.xml',
         'views/dayflow_menus.xml',
         'data/dayflow_demo_data.xml',
     ],

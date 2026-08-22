@@ -61,6 +61,14 @@
             <field name="arch" type="xml">
                 <form string="Employee">
                     <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_attendance"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-clock-o">
+                                <field name="attendance_count" widget="statinfo" string="Attendances"/>
+                            </button>
+                        </div>
                         <field name="image_1920" widget="image" class="oe_avatar" options="{'preview_image': 'image_1920'}"/>
                         <div class="oe_title">
                             <label for="name" class="oe_edit_only" string="Employee Name"/>
@@ -76,6 +84,10 @@
                                 <field name="job_position" placeholder="e.g. Senior Software Engineer"/>
                                 <field name="department" placeholder="e.g. Engineering"/>
                                 <field name="joining_date"/>
+                                <field name="attendance_state"
+                                       widget="badge"
+                                       decoration-success="attendance_state == 'checked_in'"
+                                       decoration-muted="attendance_state == 'checked_out'"/>
                                 <field name="active" invisible="1"/>
                             </group>
                             <group string="Contact Details">
@@ -85,6 +97,7 @@
                                 <field name="company_id" groups="base.group_multi_company"/>
                             </group>
                         </group>
+
                     </sheet>
                 </form>
             </field>

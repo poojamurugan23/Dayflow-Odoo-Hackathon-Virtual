@@ -66,10 +66,56 @@ class DayflowEmployee(models.Model):
         default=True,
         help='Set to False to archive this employee record'
     )
+    attendance_ids = fields.One2many(
+        'dayflow.attendance',
+        'employee_id',
+        string='Attendance Records'
+    )
+    attendance_count = fields.Integer(
+        string='Attendance Count',
+        compute='_compute_attendance_count'
+    )
+    attendance_state = fields.Selection(
+        [
+            ('checked_in', 'Checked In'),
+            ('checked_out', 'Checked Out'),
+        ],
+        string='Attendance Status',
+        compute='_compute_attendance_state',
+        default='checked_out'
+    )
 
     _sql_constraints = [
         ('employee_id_unique', 'unique(employee_id)', 'The Employee ID must be unique across the organization!')
     ]
+
+    @api.depends('attendance_ids')
+    def _compute_attendance_count(self):
+        for employee in self:
+            employee.attendance_count = len(employee.attendance_ids)
+
+    @api.depends('attendance_ids.check_out')
+    def _compute_attendance_state(self):
+        for employee in self:
+            last_attendance = self.env['dayflow.attendance'].search([
+                ('employee_id', '=', employee.id)
+            ], order='check_in desc, id desc', limit=1)
+            if last_attendance and not last_attendance.check_out:
+                employee.attendance_state = 'checked_in'
+            else:
+                employee.attendance_state = 'checked_out'
+
+    def action_view_attendance(self):
+        self.ensure_one()
+        return {
+            'name': f'Attendance - {self.name}',
+            'type': 'ir.actions.act_window',
+            'res_model': 'dayflow.attendance',
+            'view_mode': 'tree,kanban,form',
+            'domain': [('employee_id', '=', self.id)],
+            'context': {'default_employee_id': self.id},
+        }
+
 
     @api.model
     def _generate_default_employee_id(self):
