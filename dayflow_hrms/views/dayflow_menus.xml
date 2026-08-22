@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Top Root Menu -->
+        <menuitem id="menu_dayflow_root"
+                  name="Dayflow HRMS"
+                  sequence="10"/>
+
+        <!-- Main Categories -->
+        <menuitem id="menu_dayflow_employees_root"
+                  name="Employees"
+                  parent="menu_dayflow_root"
+                  sequence="10"/>
+
+        <!-- Action Menu Item -->
+        <menuitem id="menu_dayflow_employees_all"
+                  name="All Employees"
+                  parent="menu_dayflow_employees_root"
+                  action="action_dayflow_employee"
+                  sequence="10"/>
+
+        <!-- Attendance Category -->
+        <menuitem id="menu_dayflow_attendance_root"
+                  name="Attendance"
+                  parent="menu_dayflow_root"
+                  sequence="20"/>
+
+        <!-- Attendance Submenus -->
+        <menuitem id="menu_dayflow_attendance_my"
+                  name="My Attendance"
+                  parent="menu_dayflow_attendance_root"
+                  action="action_dayflow_attendance_my"
+                  sequence="10"/>
+
+        <menuitem id="menu_dayflow_attendance_all"
+                  name="All Attendance"
+                  parent="menu_dayflow_attendance_root"
+                  action="action_dayflow_attendance_all"
+                  groups="dayflow_hrms.group_dayflow_admin"
+                  sequence="20"/>
+
+    </data>
+</odoo>
+

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Minimal Test Employee 1: System Admin / HR Manager -->
+        <record id="demo_employee_admin" model="dayflow.employee">
+            <field name="name">Administrator</field>
+            <field name="first_name">Administrator</field>
+            <field name="last_name"></field>
+            <field name="employee_id">OIADMI20260001</field>
+            <field name="email">admin@dayflow.local</field>
+            <field name="phone">+1 555-0100</field>
+            <field name="job_position">HR Director</field>
+            <field name="department">Human Resources</field>
+            <field name="joining_date">2026-01-01</field>
+            <field name="user_id" ref="base.user_admin"/>
+        </record>
+
+        <!-- Minimal Test Employee 2: Test Standard Employee -->
+        <record id="demo_employee_alex" model="dayflow.employee">
+            <field name="name">Alex Morgan</field>
+            <field name="first_name">Alex</field>
+            <field name="last_name">Morgan</field>
+            <field name="employee_id">OIALMO20260002</field>
+            <field name="email">alex.morgan@dayflow.local</field>
+            <field name="phone">+1 555-0102</field>
+            <field name="job_position">Senior Software Engineer</field>
+            <field name="department">Engineering</field>
+            <field name="joining_date">2026-02-15</field>
+        </record>
+
+
+        <!-- Demo Attendance 1: Admin Full Day Present -->
+        <record id="demo_attendance_admin_1" model="dayflow.attendance">
+            <field name="employee_id" ref="demo_employee_admin"/>
+            <field name="check_in" eval="(datetime.now() - timedelta(days=1)).replace(hour=9, minute=0, second=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="check_out" eval="(datetime.now() - timedelta(days=1)).replace(hour=17, minute=30, second=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="attendance_date" eval="(datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')"/>
+            <field name="status">present</field>
+            <field name="notes">Standard working day.</field>
+        </record>
+
+        <!-- Demo Attendance 2: Alex Morgan Late Arrival -->
+        <record id="demo_attendance_alex_1" model="dayflow.attendance">
+            <field name="employee_id" ref="demo_employee_alex"/>
+            <field name="check_in" eval="(datetime.now() - timedelta(days=1)).replace(hour=10, minute=15, second=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="check_out" eval="(datetime.now() - timedelta(days=1)).replace(hour=18, minute=30, second=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="attendance_date" eval="(datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')"/>
+            <field name="status">late</field>
+            <field name="notes">Morning traffic delay on highway.</field>
+        </record>
+
+        <!-- Demo Attendance 3: Admin Active Session for Today -->
+        <record id="demo_attendance_admin_today" model="dayflow.attendance">
+            <field name="employee_id" ref="demo_employee_admin"/>
+            <field name="check_in" eval="datetime.now().replace(hour=9, minute=0, second=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="attendance_date" eval="datetime.now().strftime('%Y-%m-%d')"/>
+            <field name="status">present</field>
+            <field name="notes">Active in office.</field>
+        </record>
+
+    </data>
+</odoo>
+
