@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 export type LeaveTypeChoice = {
   id: string;
@@ -144,8 +145,10 @@ export function TimeOffRequest({
             className="flex items-start gap-2.5 rounded-lg border border-border bg-muted/40 p-3 text-sm"
           >
             <CircleCheck
-              className="mt-0.5 size-4 shrink-0"
-              style={{ color: state.autoApproved ? "#1F8A5F" : undefined }}
+              className={cn(
+                "mt-0.5 size-4 shrink-0",
+                state.autoApproved && "text-status-present",
+              )}
               aria-hidden
             />
             <div>
@@ -261,8 +264,7 @@ export function TimeOffRequest({
             {conflict && conflict.count > 0 && (
               <p
                 role="status"
-                className="flex items-start gap-2 rounded-lg border px-3 py-2 text-xs"
-                style={{ borderColor: "#B8791C55", color: "#B8791C" }}
+                className="flex items-start gap-2 rounded-lg border border-status-absent/35 px-3 py-2 text-xs text-status-absent"
               >
                 <Users className="mt-0.5 size-3.5 shrink-0" aria-hidden />
                 <span>

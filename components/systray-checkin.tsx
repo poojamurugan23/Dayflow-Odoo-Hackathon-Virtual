@@ -7,9 +7,11 @@ import { LogIn, LogOut, TriangleAlert } from "lucide-react";
 import { checkIn, checkOut } from "@/actions/attendance";
 import { ClockIST, LiveTimer } from "@/components/live-timer";
 
-/** The one place magenta appears: a session running right now. */
-export const LIVE_MAGENTA = "#D6006E";
-const MISSING_AMBER = "#B8791C";
+/*
+ * Magenta appears here and nowhere else: --status-live, as `bg-status-live`.
+ * A forgotten check-out uses --status-absent, the same amber the attendance
+ * tables use for the same fact.
+ */
 
 type Session = {
   active: boolean;
@@ -57,12 +59,11 @@ export function SystrayCheckIn({ serverSession }: { serverSession: Session }) {
     return (
       <Link
         href="/attendance"
-        className="flex min-w-0 items-center gap-1.5 rounded-full border border-dashed px-2.5 py-1 text-xs transition-colors duration-150 hover:bg-muted/50"
-        style={{ borderColor: MISSING_AMBER }}
+        className="flex min-w-0 items-center gap-1.5 rounded-full border border-dashed border-status-absent px-2.5 py-1 text-xs transition-colors duration-150 hover:bg-status-absent/10"
         title={`Open session from ${dateIST(session.staleSince)} — regularize it to check in again`}
       >
-        <TriangleAlert className="size-3.5 shrink-0" style={{ color: MISSING_AMBER }} aria-hidden />
-        <span className="whitespace-nowrap" style={{ color: MISSING_AMBER }}>
+        <TriangleAlert className="size-3.5 shrink-0 text-status-absent" aria-hidden />
+        <span className="whitespace-nowrap text-status-absent">
           Check-out missing
         </span>
         <span className="hidden whitespace-nowrap text-muted-foreground sm:inline">
@@ -82,10 +83,10 @@ export function SystrayCheckIn({ serverSession }: { serverSession: Session }) {
           aria-label="Check out"
           className="flex min-w-0 items-center gap-2 rounded-full border border-border bg-card px-2.5 py-1 text-xs transition-colors duration-150 hover:border-muted-foreground/40 disabled:opacity-70"
         >
+          {/* The live dot. The only magenta on screen. */}
           <span
             aria-hidden
-            className="size-2 shrink-0 rounded-full motion-safe:animate-pulse"
-            style={{ backgroundColor: LIVE_MAGENTA }}
+            className="size-2 shrink-0 rounded-full bg-status-live motion-safe:animate-pulse"
           />
           <span className="hidden whitespace-nowrap text-muted-foreground lg:inline">
             Since {timeIST(session.since)}

@@ -77,8 +77,8 @@ export function AdminQueue({
         conflicts={conflicts}
         emptyMessage={
           query
-            ? `No requests match “${query}”.`
-            : "No requests yet — they'll appear here as your team submits them."
+            ? `No requests match “${query}” — try a name or a login ID.`
+            : "No requests yet — they appear here as your team submits them."
         }
       />
     </div>

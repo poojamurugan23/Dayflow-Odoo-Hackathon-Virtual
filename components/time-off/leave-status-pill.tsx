@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 export function LeaveStatusPill({ status }: { status: LeaveStatus }) {
   const tone: Record<LeaveStatus, string> = {
     pending: "border-border text-muted-foreground",
-    approved: "border-[#1F8A5F55] text-[#1F8A5F]",
+    approved: "border-status-present/35 text-status-present",
     rejected: "border-destructive/40 text-destructive",
     cancelled: "border-border text-muted-foreground/60 line-through",
   };

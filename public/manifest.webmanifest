@@ -1,0 +1,24 @@
+{
+  "name": "Dayflow — HRMS",
+  "short_name": "Dayflow",
+  "description": "Every workday, perfectly aligned. Attendance, time off and payroll as one record.",
+  "id": "/",
+  "start_url": "/employees",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#502D55",
+  "background_color": "#F8F4E9",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Attendance", "url": "/attendance" },
+    { "name": "Time Off", "url": "/time-off" }
+  ]
+}

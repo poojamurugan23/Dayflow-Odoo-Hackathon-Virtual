@@ -6,8 +6,8 @@ Identity, presence, absence, and compensation as **one** record. Attendance and
 approved leave *feed* payroll rather than sitting beside it — that connection is
 the product thesis, not a bonus feature.
 
-**Status: Phase 4 complete.** Auth, employees, attendance, and time off all
-work. Salary (Phase 5) and the brand restyle (Phase 6) are outstanding.
+**Status: complete.** Auth, employees, attendance, time off, salary, and the
+brand pass. See *Known limitations* for what is deliberately out of scope.
 
 ---
 
@@ -191,3 +191,35 @@ Run in order, in the Supabase SQL editor:
 | `0006_salary_visibility.sql` | Lets an employee read their own salary; keeps everyone else out, including HR. Splits 0002's `for all` policy by command — widening it would have let an employee DELETE their own salary history. Revokes every write grant so the only path to a wage change is the audited server action, and adds a unique index guaranteeing one open structure per person. |
 
 Then `npm run setup:storage` for the `avatars` and `leave-documents` buckets.
+
+
+---
+
+## Known limitations
+
+All intentional, all scoped out rather than half-built.
+
+| Limitation | Why |
+|---|---|
+| **No payslip PDF** | The payable-days strip already proves attendance drives payroll; PDF generation proves nothing extra and costs a rendering dependency. |
+| **No email** | Replaced by in-app notifications by design — deliverability from a hackathon deploy is unreliable and unverifiable. Supabase still sends auth emails. |
+| **Time-off calendar covers 3 months** | Current month plus two. A full year is twelve grids of mostly-empty cells; widening it is one constant in `components/time-off/leave-calendar.tsx`. |
+| **Work schedules are read-only** | Changing `half_day_threshold` retroactively rescores every past day through `v_daily_attendance`. That needs effective-dating like salary has, not an in-place edit. |
+| **No offboarding / exit flow** | `profiles.exit_date` exists and the views already filter on it; the UI does not. |
+| **No multi-org UI** | The schema is org-scoped, but `is_manager()` is not — with a second organisation a manager would see the other org's rows. Single-tenant demo. |
+| **No QR or geofenced check-in** | `attendance_punches.source` already carries `web \| mobile \| qr`. |
+| **Break time is not deducted from work hours** | It is displayed from `work_schedules` and used for the half-day threshold, but `v_daily_attendance` sums raw punch spans. |
+| **No attendance analytics** | Charts and trends. The data supports them; nothing reads it that way. |
+| **Attendance view performance** | `v_daily_attendance` builds its day spine with `generate_series` on every read, and only for the CURRENT month. Fine at demo scale; production would materialize nightly and widen the window. |
+| **No dark theme** | The brand guidelines define one working surface (Paper with white cards). A second palette nobody specified would be invented, not applied. |
+| **Offline** | The service worker gives installability and a fallback page. It deliberately caches no data responses — every screen is per-user data behind RLS, and a cached salary would outlive the session that was allowed to see it. |
+
+### Deliberate deviations from the wireframe
+
+| Wireframe | What was built | Why |
+|---|---|---|
+| Status dot goes red → green on check-in | Three states: **Live magenta** while a session runs, settling to green on check-out | The brand guidelines' live-accent rule. "In the office right now" is a different fact from "was present today", and it is the one thing on screen that is happening. |
+| Fixed Allowance ₹2,918 (11.67% of Basic) | The **remainder** — ₹4,167.50 on a ₹50,000 wage | Master plan Part 2. The printed figure leaves the components ₹1,250 short of the wage, so the validation strip could never balance. |
+| Standard Allowance "16.67% of wage" (Phase 6 brief) | 16.67% **of Basic** | Of-wage makes the five named components total exactly the wage and Fixed Allowance zero, contradicting the ₹4,168 both documents state. The wireframe's own Fixed figure confirms the base. |
+| Self-registration with a role picker | Admin-invite onboarding only | A public role picker lets anyone self-assign HR and read every salary. |
+| Employee edits limited to address/phone/picture (SRS 3.3.2) | Employees may also edit their own résumé prose and skills | A bio written by HR on someone's behalf is not a feature. Bank and job details stay HR-only. |

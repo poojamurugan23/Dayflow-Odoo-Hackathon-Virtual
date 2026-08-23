@@ -15,8 +15,7 @@ import { cn } from "@/lib/utils";
  * strip is proof that the rules balance, and it would go red immediately if
  * someone replaced the remainder with the wireframe's literal 11.67%.
  */
-const BALANCED = "#1F8A5F";
-const EXCEEDS = "#C0392B";
+
 
 export function ValidationStrip({ total, wage }: { total: number; wage: number }) {
   // Compared in paise. Two floats that both display as 50,000.00 can still
@@ -28,7 +27,6 @@ export function ValidationStrip({ total, wage }: { total: number; wage: number }
   const exceeds = totalPaise > wagePaise;
   const short = totalPaise < wagePaise;
   const balanced = !exceeds && !short;
-  const colour = balanced ? BALANCED : EXCEEDS;
 
   return (
     <div
@@ -36,21 +34,30 @@ export function ValidationStrip({ total, wage }: { total: number; wage: number }
       aria-live="polite"
       className={cn(
         "flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border px-4 py-2.5 text-sm",
+        balanced
+          ? "border-status-present/35 bg-status-present/5"
+          : "border-status-danger/35 bg-status-danger/5",
       )}
-      style={{ borderColor: `${colour}55`, backgroundColor: `${colour}0D` }}
     >
       {balanced ? (
-        <CircleCheck className="size-4 shrink-0" style={{ color: colour }} aria-hidden />
+        <CircleCheck className="size-4 shrink-0 text-status-present" aria-hidden />
       ) : (
-        <CircleAlert className="size-4 shrink-0" style={{ color: colour }} aria-hidden />
+        <CircleAlert className="size-4 shrink-0 text-status-danger" aria-hidden />
       )}
 
       <span className="text-muted-foreground">Total components</span>
-      <span className="font-mono text-sm font-medium tabular-nums" style={{ color: colour }}>
+      <span
+        className={cn(
+          "font-mono text-sm font-medium tabular-nums",
+          balanced ? "text-status-present" : "text-status-danger",
+        )}
+      >
         ₹{formatINR(total)} / ₹{formatINR(wage)}
       </span>
 
-      <span className="text-xs" style={{ color: colour }}>
+      <span
+        className={cn("text-xs", balanced ? "text-status-present" : "text-status-danger")}
+      >
         {balanced && "balances exactly"}
         {exceeds && `exceeds the wage by ₹${formatINR((totalPaise - wagePaise) / 100)}`}
         {short && `₹${formatINR((wagePaise - totalPaise) / 100)} unallocated`}

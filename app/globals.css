@@ -61,86 +61,109 @@
   --color-status-live: var(--status-live);
   --color-holiday-soft: var(--holiday-soft);
   --color-holiday-ink: var(--holiday-ink);
+
+  /* ---------------------------------------------------------------------
+     Brand palette — the four colours from the guidelines, named so a
+     component can reach for `bg-plum` or `text-mauve` and never a hex.
+     --------------------------------------------------------------------- */
+  --color-plum: var(--plum);
+  --color-mauve: var(--mauve);
+  --color-cream: var(--cream);
+  --color-paper: var(--paper);
+
+  /* Working-surface neutrals. `ink` is body text, `ink-2` is secondary. */
+  --color-canvas: var(--canvas);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-hairline: var(--hairline);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  /* =====================================================================
+     BRAND — odoo-india-dayflow-brand-guidelines.md
+     ---------------------------------------------------------------------
+     The four brand colours are given: Plum, Mauve, Cream, Paper. The
+     working-surface neutrals below (canvas / card / hairline / ink / ink-2)
+     are DERIVED from them, because the guidelines file was not available in
+     this workspace — only the four hexes and the gradient were specified.
+     They are warm and plum-tinted rather than grey on purpose: a neutral grey
+     border against Paper reads as dirty. If the real guideline values differ,
+     this block is the only place to change.
+     ===================================================================== */
+  --plum: #502D55;
+  --mauve: #935073;
+  --cream: #F6DBC0;
+  --paper: #F8F4E9;
+
+  --canvas: #F8F4E9;   /* Paper — the app background */
+  --ink: #241826;      /* body text: near-black, plum-tinted */
+  --ink-2: #6F6070;    /* secondary text and labels */
+  --hairline: #E6DCC9; /* warm hairline borders */
+
+  /* ---------------------------------------------------------------------
+     shadcn/Tailwind token remap. The whole app was written against these
+     names since Phase 0, which is what makes the restyle a token swap
+     rather than a rewrite — nothing below this line required a component
+     change.
+     --------------------------------------------------------------------- */
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: #FFFFFF;
+  --card-foreground: var(--ink);
+  --popover: #FFFFFF;
+  --popover-foreground: var(--ink);
+
+  --primary: var(--plum);
+  --primary-foreground: var(--paper);
+  --secondary: #F1E9DA;
+  --secondary-foreground: var(--plum);
+
+  --muted: #F1EADC;
+  --muted-foreground: var(--ink-2);
+  --accent: #F1E4EC;              /* faint mauve wash for hover */
+  --accent-foreground: var(--plum);
+
+  --destructive: var(--status-danger);
+  --border: var(--hairline);
+  --input: #DCD1BC;               /* a touch stronger than a divider */
+  --ring: var(--mauve);
+
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  --chart-1: var(--plum);
+  --chart-2: var(--mauve);
+  --chart-3: #B77A96;
+  --chart-4: var(--cream);
+  --chart-5: var(--ink-2);
+
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--plum);
+  --sidebar-primary-foreground: var(--paper);
+  --sidebar-accent: #F1E4EC;
+  --sidebar-accent-foreground: var(--plum);
+  --sidebar-border: var(--hairline);
+  --sidebar-ring: var(--mauve);
 
   /* Functional ramp. Same values used since Phase 2 — a status colour that
-     shifted between phases would make screenshots disagree. */
-  --status-present: #1F8A5F;   /* present, half-day, balanced totals */
-  --status-leave: #3E6FA8;     /* on leave */
-  --status-absent: #B8791C;    /* absent, unpaid, missing check-out */
-  --status-danger: #C0392B;    /* rejected, unread badge, errors */
-  --status-live: #D6006E;      /* a session running RIGHT NOW. One element only. */
-  --holiday-soft: #EFE3D0;     /* holiday cell fill */
-  --holiday-ink: #7A5A2E;      /* text on a holiday cell */
+     shifted between phases would make screenshots disagree. These carry
+     MEANING and are deliberately outside the brand remap above. */
+  --status-present: #1F8A5F;
+  --status-leave: #3E6FA8;
+  --status-absent: #B8791C;
+  --status-danger: #C0392B;
+  --status-live: #D6006E;
+  --holiday-soft: #EFE3D0;
+  --holiday-ink: #7A5A2E;
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
+/*
+ * No dark theme this phase. The brand guidelines define one working surface —
+ * Paper with white cards — and a second palette nobody has specified would be
+ * invented, not applied. The .dark class is left undefined rather than left
+ * stale: a half-migrated dark block is how an app ends up with grey borders on
+ * a plum page.
+ */
 
 @layer base {
   * {
@@ -151,5 +174,50 @@
   }
   html {
     @apply font-sans;
+    /* Warm the whole surface rather than letting the browser pick. */
+    background-color: var(--canvas);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /*
+   * Every number in the product is IBM Plex Mono with tabular figures: times,
+   * currency, percentages, day counts, login IDs. Tabular is the point — a
+   * salary column whose digits change width jitters on every recalculation.
+   */
+  .font-mono,
+  code,
+  kbd,
+  samp,
+  pre {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* Anything decorative is opt-out for people who asked for less motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /*
+   * Violet Dusk — brand guidelines Part 8. Allowed ONLY on brand surfaces:
+   * sign in, sign up, forced password change. Never behind a table, a card or
+   * an in-app button.
+   */
+  .brand-gradient {
+    background-image: linear-gradient(
+      135deg,
+      var(--plum) 0%,
+      var(--mauve) 42%,
+      var(--cream) 100%
+    );
   }
 }

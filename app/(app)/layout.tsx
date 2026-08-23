@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getOpenPunch } from "@/lib/attendance";
 import { listNotifications, relativeTime } from "@/lib/notifications";
 import { initials, roleLabel } from "@/lib/display";
+import { Lockup } from "@/components/brand/lockup";
 import { NavLinks, type NavItem } from "@/components/nav-links";
 import { NotificationBell, type BellNotification } from "@/components/notification-bell";
 import { SystrayCheckIn } from "@/components/systray-checkin";
@@ -68,24 +68,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             widths — without both, the systray pushed the row wider than the
             viewport and the page scrolled sideways. */}
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
-          <Link href="/employees" className="flex min-w-0 shrink-0 items-center gap-2">
-            {user.organization?.logoUrl ? (
-              <Image
-                src={user.organization.logoUrl}
-                alt=""
-                width={24}
-                height={24}
-                className="size-6 shrink-0 rounded"
-                unoptimized
-              />
-            ) : (
-              <span className="flex size-6 shrink-0 items-center justify-center rounded bg-primary text-[10px] font-semibold text-primary-foreground">
-                {user.organization?.code ?? "DF"}
-              </span>
-            )}
-            <span className="hidden truncate text-sm font-semibold tracking-tight text-foreground lg:inline">
-              {user.organization?.name ?? "Dayflow"}
-            </span>
+          {/* The lockup replaces the plain "OI Odoo India" text — brand
+              guidelines Part 8. Ink tone: this is a working surface. */}
+          <Link
+            href="/employees"
+            className="shrink-0 rounded-md transition-opacity hover:opacity-80"
+            aria-label={`${user.organization?.name ?? "Dayflow"} home`}
+          >
+            <Lockup
+              orgName={user.organization?.name}
+              logoUrl={user.organization?.logoUrl}
+              orgCode={user.organization?.code}
+              size="sm"
+              className="max-w-[9rem] lg:max-w-none"
+            />
           </Link>
 
           <div className="hidden min-w-0 sm:block">

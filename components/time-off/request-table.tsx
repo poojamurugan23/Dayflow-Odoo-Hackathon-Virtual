@@ -1,5 +1,7 @@
 import { CalendarOff, Users } from "lucide-react";
 
+import { EmptyState } from "@/components/empty-state";
+
 import { formatDate, initials } from "@/lib/display";
 import { formatDays } from "@/lib/leave-days";
 import type { LeaveRequestRow } from "@/lib/leave";
@@ -37,12 +39,7 @@ export function RequestTable({
   emptyMessage: string;
 }) {
   if (requests.length === 0) {
-    return (
-      <div className="rounded-xl border border-dashed border-border px-6 py-12 text-center">
-        <CalendarOff className="mx-auto size-5 text-muted-foreground/60" aria-hidden />
-        <p className="mt-2 text-sm text-muted-foreground">{emptyMessage}</p>
-      </div>
-    );
+    return <EmptyState icon={CalendarOff} title={emptyMessage} />;
   }
 
   return (
@@ -121,8 +118,7 @@ export function RequestTable({
                       because staffing is the thing they are actually judging. */}
                   {conflict && conflict.count > 0 && request.status === "pending" && (
                     <span
-                      className="mt-1 flex items-start gap-1 text-[11px]"
-                      style={{ color: "#B8791C" }}
+                      className="mt-1 flex items-start gap-1 text-[11px] text-status-absent"
                     >
                       <Users className="mt-0.5 size-3 shrink-0" aria-hidden />
                       <span>

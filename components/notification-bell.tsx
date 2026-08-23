@@ -24,8 +24,8 @@ export type BellNotification = {
   when: string;
 };
 
-/** The count badge. Magenta is reserved for a live session, so this is red. */
-const UNREAD = "#C0392B";
+/* The count badge uses the danger token: magenta is reserved for a live
+   session and must stay the only magenta on screen. */
 
 /**
  * In-app notification centre — the agreed replacement for email.
@@ -74,8 +74,7 @@ export function NotificationBell({ notifications }: { notifications: BellNotific
               // aria-hidden: the count is already in the button's label, so a
               // screen reader would otherwise announce the number twice.
               aria-hidden
-              className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-4 text-white ring-2 ring-background"
-              style={{ backgroundColor: UNREAD }}
+              className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-status-danger px-1 text-[10px] font-semibold leading-4 text-paper ring-2 ring-background"
             >
               {unread > 9 ? "9+" : unread}
             </span>
@@ -106,7 +105,9 @@ export function NotificationBell({ notifications }: { notifications: BellNotific
         {items.length === 0 ? (
           <div className="px-3 py-8 text-center">
             <BellOff className="mx-auto size-4 text-muted-foreground/60" aria-hidden />
-            <p className="mt-2 text-xs text-muted-foreground">Nothing yet.</p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Nothing yet — leave decisions and new requests land here.
+            </p>
           </div>
         ) : (
           <ul className="max-h-80 overflow-y-auto">
@@ -124,8 +125,10 @@ export function NotificationBell({ notifications }: { notifications: BellNotific
                       titles stay aligned down the list. */}
                   <span
                     aria-hidden
-                    className="mt-1.5 size-1.5 shrink-0 rounded-full"
-                    style={notification.isRead ? undefined : { backgroundColor: UNREAD }}
+                    className={cn(
+                      "mt-1.5 size-1.5 shrink-0 rounded-full",
+                      !notification.isRead && "bg-status-danger",
+                    )}
                   />
                   <span className="min-w-0 flex-1">
                     <span

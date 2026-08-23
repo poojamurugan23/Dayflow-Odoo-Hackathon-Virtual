@@ -26,6 +26,9 @@ export function SignInForm() {
           placeholder="OIPRSH20210001"
           required
           autoFocus
+          // A login ID is a code, so it gets the mono face like every other
+          // identifier in the product. An email typed here is still legible.
+          className="font-mono"
         />
       </div>
 

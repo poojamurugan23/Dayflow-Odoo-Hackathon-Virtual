@@ -52,7 +52,10 @@ export function PeriodStepper({
         className="h-7 rounded-md border border-border bg-transparent px-2 font-mono text-xs text-foreground"
       />
 
-      <h2 className="text-sm font-medium text-foreground">{label}</h2>
+      {/* The native month/date input already spells out the period, so the
+          heading is redundant on a narrow screen — two "August 2026" side by
+          side. Kept from sm up, where there is room and it reads as a heading. */}
+      <h2 className="hidden text-sm font-medium text-foreground sm:block">{label}</h2>
     </div>
   );
 }

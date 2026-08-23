@@ -8,10 +8,10 @@ import { cn } from "@/lib/utils";
  */
 export function StatusPill({ status }: { status: DayStatus }) {
   const tone: Record<DayStatus, string> = {
-    present: "text-[#1F8A5F]",
-    half_day: "text-[#1F8A5F]",
-    leave: "text-[#3E6FA8]",
-    absent: "text-[#B8791C]",
+    present: "text-status-present",
+    half_day: "text-status-present",
+    leave: "text-status-leave",
+    absent: "text-status-absent",
     weekoff: "text-muted-foreground/60",
     holiday: "text-muted-foreground/60",
   };

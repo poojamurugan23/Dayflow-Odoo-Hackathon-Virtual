@@ -15,15 +15,13 @@ import { cn } from "@/lib/utils";
  * "on leave" and "absent", not "primary" or "accent", so they must not shift
  * when Phase 6 restyles the palette.
  */
-const PRESENT = "#1F8A5F";
-const LEAVE = "#3E6FA8";
-const ABSENT = "#B8791C";
 
-/**
- * Live magenta — a session running RIGHT NOW. The only magenta in the product,
- * which is what makes it read as "this is happening" rather than decoration.
+
+/*
+ * Live magenta is --status-live, applied as `bg-status-live`. It is the only
+ * magenta in the product, which is what makes it read as "this is happening"
+ * rather than decoration.
  */
-const LIVE = "#D6006E";
 
 export function StatusDot({
   status,
@@ -47,10 +45,9 @@ export function StatusDot({
         aria-label={label}
         title={label}
         className={cn(
-          "block size-2.5 rounded-full ring-2 ring-card transition-colors duration-200 motion-safe:animate-pulse",
+          "block size-2.5 rounded-full bg-status-live ring-2 ring-card transition-colors duration-200 motion-safe:animate-pulse",
           className,
         )}
-        style={{ backgroundColor: LIVE }}
       />
     );
   }
@@ -63,7 +60,7 @@ export function StatusDot({
         title={label}
         className={cn("flex size-4 items-center justify-center", className)}
       >
-        <Plane className="size-4 -rotate-12" style={{ color: LEAVE }} aria-hidden />
+        <Plane className="size-4 -rotate-12 text-status-leave" aria-hidden />
       </span>
     );
   }
@@ -79,26 +76,23 @@ export function StatusDot({
       title={label}
       className={cn(
         "block size-2.5 rounded-full ring-2 ring-card transition-colors duration-200",
-        neutral && "bg-muted-foreground/40",
+        neutral ? "bg-muted-foreground/40" : dotClass(status),
         className,
       )}
-      style={neutral ? undefined : { backgroundColor: dotColour(status) }}
     />
   );
 }
 
-function dotColour(status: DayStatus): string {
+function dotClass(status: DayStatus): string {
   switch (status) {
     case "present":
-      return PRESENT;
+      return "bg-status-present";
     case "half_day":
       // Half a day worked is still attendance, so it stays in the present
       // family rather than being flagged amber like an unexplained absence.
-      return PRESENT;
-    case "absent":
-      return ABSENT;
+      return "bg-status-present";
     default:
-      return ABSENT;
+      return "bg-status-absent";
   }
 }
 

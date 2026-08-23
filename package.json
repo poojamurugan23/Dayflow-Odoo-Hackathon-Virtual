@@ -10,7 +10,8 @@
     "seed:auth": "node --env-file=.env.local scripts/create-auth-users.mjs",
     "typecheck": "tsc --noEmit",
     "verify:rls": "node --env-file=.env.local scripts/verify-rls.mjs",
-    "setup:storage": "node --env-file=.env.local scripts/setup-storage.mjs"
+    "setup:storage": "node --env-file=.env.local scripts/setup-storage.mjs",
+    "demo:refresh": "node --env-file=.env.local scripts/refresh-demo.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

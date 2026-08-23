@@ -114,7 +114,7 @@ function Handover({
   return (
     <div className="max-w-2xl">
       <div className="flex items-start gap-3 rounded-lg border border-border bg-card p-5">
-        <CheckCircle2 className="mt-0.5 size-5 shrink-0" style={{ color: "#1F8A5F" }} aria-hidden />
+        <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-status-present" aria-hidden />
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-card-foreground">
             {created.fullName} is set up

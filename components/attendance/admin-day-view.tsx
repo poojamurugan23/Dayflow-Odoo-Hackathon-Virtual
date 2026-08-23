@@ -12,8 +12,6 @@ import { initials } from "@/lib/display";
 import { cn } from "@/lib/utils";
 
 const MONO = "font-mono tabular-nums";
-const PRESENT_GREEN = "#1F8A5F";
-const MISSING_AMBER = "#B8791C";
 
 /** Serialisable shape — the server view rows, pre-formatted for display. */
 export type DayPersonRow = {
@@ -81,8 +79,8 @@ export function AdminDayView({
       {rows.length === 0 ? (
         <Empty />
       ) : filtered.length === 0 ? (
-        <div className="mt-6 rounded-lg border border-dashed border-border px-6 py-12 text-center text-sm text-muted-foreground">
-          Nobody matches “{query.trim()}”.
+        <div className="mt-6 rounded-xl border border-dashed border-border px-6 py-12 text-center text-sm text-muted-foreground">
+          Nobody matches “{query.trim()}” — try part of a name or a job position.
         </div>
       ) : (
         <div className="mt-5 overflow-x-auto rounded-lg border border-border">
@@ -141,7 +139,7 @@ export function AdminDayView({
                     </Td>
                     <Td align="right" className={MONO}>
                       {row.missingCheckout ? (
-                        <span style={{ color: MISSING_AMBER }} title="Missing check-out">
+                        <span className="text-status-absent" title="Missing check-out">
                           —
                         </span>
                       ) : (
@@ -153,7 +151,7 @@ export function AdminDayView({
                     </Td>
                     <Td align="right" className={MONO}>
                       {row.extraHours ? (
-                        <span style={{ color: PRESENT_GREEN }}>+{row.extraHours}</span>
+                        <span className="text-status-present">+{row.extraHours}</span>
                       ) : (
                         <Dash dim={dim} />
                       )}

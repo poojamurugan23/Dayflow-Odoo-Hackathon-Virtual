@@ -7,8 +7,6 @@ import { addMonths, formatHours, monthLabel, timeIST, type MonthAttendance } fro
 import { cn } from "@/lib/utils";
 
 const MONO = "font-mono tabular-nums";
-const PRESENT_GREEN = "#1F8A5F";
-const MISSING_AMBER = "#B8791C";
 
 /**
  * Employee month view. Every cell comes from v_daily_attendance — this
@@ -45,7 +43,7 @@ export function EmployeeMonthView({
         <EmptyMonth outsideViewRange={outsideViewRange} />
       ) : (
         <div className="mt-6 overflow-x-auto rounded-lg border border-border">
-          <table className="w-full min-w-[46rem] text-sm">
+          <table className="w-full min-w-[34rem] text-sm sm:min-w-[46rem]">
             <thead>
               <tr className="border-b border-border text-left">
                 <Th>Date</Th>
@@ -53,7 +51,8 @@ export function EmployeeMonthView({
                 <Th align="right">Check in</Th>
                 <Th align="right">Check out</Th>
                 <Th align="right">Work hours</Th>
-                <Th align="right">Extra hours</Th>
+                {/* Least important column, and the first to go on a phone. */}
+                <Th align="right" className="hidden sm:table-cell">Extra hours</Th>
                 <Th />
               </tr>
             </thead>
@@ -81,7 +80,7 @@ export function EmployeeMonthView({
                       {row.missingCheckout ? (
                         // Amber, not blank: in this system a missing check-out
                         // costs payable days, so it must look like a problem.
-                        <span style={{ color: MISSING_AMBER }} title="Missing check-out">
+                        <span className="text-status-absent" title="Missing check-out">
                           —
                         </span>
                       ) : (
@@ -91,9 +90,9 @@ export function EmployeeMonthView({
                     <Td align="right" className={MONO}>
                       {row.workHours > 0 ? formatHours(row.workHours) : <Dash dim={dim} />}
                     </Td>
-                    <Td align="right" className={MONO}>
+                    <Td align="right" className={cn(MONO, "hidden sm:table-cell")}>
                       {row.extraHours > 0 ? (
-                        <span style={{ color: PRESENT_GREEN }}>+{formatHours(row.extraHours)}</span>
+                        <span className="text-status-present">+{formatHours(row.extraHours)}</span>
                       ) : (
                         <Dash dim={dim} />
                       )}
@@ -142,13 +141,22 @@ function EmptyMonth({ outsideViewRange }: { outsideViewRange: boolean }) {
   );
 }
 
-function Th({ children, align }: { children?: React.ReactNode; align?: "right" }) {
+function Th({
+  children,
+  align,
+  className,
+}: {
+  children?: React.ReactNode;
+  align?: "right";
+  className?: string;
+}) {
   return (
     <th
       scope="col"
       className={cn(
         "whitespace-nowrap px-3 py-2 text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground",
         align === "right" && "text-right",
+        className,
       )}
     >
       {children}

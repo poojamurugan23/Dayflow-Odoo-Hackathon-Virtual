@@ -13,8 +13,12 @@ export type NavItem = {
 };
 
 /**
- * Top-bar navigation. The active item gets a brighter label and an underline,
- * per the wireframe.
+ * Top-bar navigation.
+ *
+ * The active item gets full-strength ink and a Plum underline — brand
+ * guidelines Part 8. Inactive items sit at ink-2 and come up to ink on hover,
+ * so the current location is legible without colour alone carrying it (the
+ * underline does that too).
  */
 export function NavLinks({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
@@ -30,17 +34,17 @@ export function NavLinks({ items }: { items: NavItem[] }) {
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative px-3 py-2 text-sm transition-colors",
+              "relative rounded-md px-3 py-2 text-sm transition-colors duration-150",
               active
-                ? "font-medium text-foreground"
-                : "text-muted-foreground hover:text-foreground",
+                ? "font-medium text-ink"
+                : "text-ink-2 hover:bg-muted/60 hover:text-ink",
             )}
           >
             {item.label}
             {active && (
               <span
                 aria-hidden
-                className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary"
+                className="absolute inset-x-3 -bottom-px h-[2px] rounded-full bg-plum"
               />
             )}
           </Link>

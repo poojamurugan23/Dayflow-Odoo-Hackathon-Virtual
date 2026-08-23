@@ -173,7 +173,7 @@ function SalaryFigures({ data, canEdit }: { data: SalaryTabData; canEdit: boolea
                 </p>
               )}
               {state.saved && !dirty && (
-                <p role="status" className="mt-2 text-xs" style={{ color: "#1F8A5F" }}>
+                <p role="status" className="mt-2 text-xs text-status-present">
                   Saved. New structure effective {formatDate(state.effectiveFrom ?? null)}.
                 </p>
               )}

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Plus, Search, Settings, Users } from "lucide-react";
 
+import { EmptyState } from "@/components/empty-state";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmployeeCard } from "@/components/employee-card";
@@ -82,16 +84,20 @@ export function EmployeeDirectory({ employees, statuses, canCreate, liveIds = []
 
       {employees.length === 0 ? (
         <EmptyState
+          className="mt-6"
+          icon={Users}
           title="No employees yet"
           body={
             canCreate
-              ? "Add your first employee and Dayflow will generate their login ID and a one-time password for you to hand over."
-              : "Nothing to show here yet."
+              ? "Add your first employee — Dayflow generates their login ID and a one-time password for you to hand over."
+              : "Your team will appear here once HR adds them."
           }
           action={canCreate ? { href: "/employees/new", label: "Add your first employee" } : undefined}
         />
       ) : filtered.length === 0 ? (
         <EmptyState
+          className="mt-6"
+          icon={Search}
           title={`Nothing matches “${query.trim()}”`}
           body="Try part of a name, or a job position like “Engineer”."
         />
@@ -107,29 +113,6 @@ export function EmployeeDirectory({ employees, statuses, canCreate, liveIds = []
             </li>
           ))}
         </ul>
-      )}
-    </div>
-  );
-}
-
-function EmptyState({
-  title,
-  body,
-  action,
-}: {
-  title: string;
-  body: string;
-  action?: { href: string; label: string };
-}) {
-  return (
-    <div className="mt-6 flex flex-col items-center rounded-lg border border-dashed border-border px-6 py-16 text-center">
-      <Users className="size-8 text-muted-foreground/50" aria-hidden />
-      <h2 className="mt-4 text-sm font-medium text-foreground">{title}</h2>
-      <p className="mt-1 max-w-sm text-sm text-muted-foreground">{body}</p>
-      {action && (
-        <Button asChild className="mt-5">
-          <Link href={action.href}>{action.label}</Link>
-        </Button>
       )}
     </div>
   );
