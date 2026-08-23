@@ -273,5 +273,22 @@ All intentional, all scoped out rather than half-built.
 | Fixed Allowance Γé╣2,918 (11.67% of Basic) | The **remainder** ΓÇö Γé╣4,167.50 on a Γé╣50,000 wage | Master plan Part 2. The printed figure leaves the components Γé╣1,250 short of the wage, so the validation strip could never balance. |
 | Standard Allowance "16.67% of wage" (Phase 6 brief) | 16.67% **of Basic** | Of-wage makes the five named components total exactly the wage and Fixed Allowance zero, contradicting the Γé╣4,168 both documents state. The wireframe's own Fixed figure confirms the base. |
 | Self-registration with a role picker | Admin-invite onboarding only | A public role picker lets anyone self-assign HR and read every salary. |
-| Employee edits limited to address/phone/picture (SRS 3.3.2) | Employees may also edit their own r├⌐sum├⌐ prose and skills | A bio written by HR on someone's behalf is not a feature. Bank and job details stay HR-only. |
+| Employee edits limited to address/phone/picture (SRS 3.3.2) | Employees may also edit their own résumé prose and skills | A bio written by HR on someone's behalf is not a feature. Bank and job details stay HR-only. |
+
+---
+
+## 👥 Hackathon Team & Contributors
+
+| Member | Role & Key Contributions | GitHub |
+|---|---|---|
+| **Pooja Murugan** | Lead Architect, Full-Stack Portal, Dashboard Layouts & Schema Integration | [@poojamurugan23](https://github.com/poojamurugan23) |
+| **Archana Muruganatham** | Authentication UI, Password Flow, Security & Dynamic Profile Components | [@ArchanaMuruganatham](https://github.com/ArchanaMuruganatham) |
+| **Krithiikaa** | Payroll Engine, Time-Off & Attendance Modules, Supabase RLS Policies | [@krithikaarajkumaar](https://github.com/krithikaarajkumaar) |
+| **Pavithra** | Odoo HRMS Foundation, Base Models, Security Groups & Demo Data | [@pavithra23125](https://github.com/pavithra23125) |
+
+---
+
+## 📄 License
+This project is developed for the Odoo Hackathon 2026 under the LGPL-3 License.
+
 
