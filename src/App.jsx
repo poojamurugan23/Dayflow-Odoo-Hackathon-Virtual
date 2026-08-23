@@ -3,8 +3,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 
-// Auth & Public Pages
-import { Landing } from './pages/Landing';
+// Auth Pages
 import { Login } from './pages/auth/Login';
 import { Signup } from './pages/auth/Signup';
 
@@ -39,9 +38,9 @@ function App() {
       <Router>
         <Routes>
           {/* Public */}
-          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/" element={<RedirectHome />} />
 
           {/* Employee Routes */}
           <Route path="/employee/*" element={
