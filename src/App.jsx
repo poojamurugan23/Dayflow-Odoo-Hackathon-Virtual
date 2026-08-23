@@ -29,7 +29,7 @@ import { SettingsPage } from './pages/Settings';
 function RedirectHome() {
   const { user, role } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={role === 'admin' ? '/admin/dashboard' : '/employee/dashboard'} replace />;
+  return <Navigate to={(role === 'admin' || role === 'hr') ? '/admin/dashboard' : '/employee/dashboard'} replace />;
 }
 
 function App() {

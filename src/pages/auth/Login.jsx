@@ -20,7 +20,7 @@ export function Login() {
 
     try {
       const userData = await login(loginId, password);
-      if (userData.role === 'admin') {
+      if (userData.role === 'admin' || userData.role === 'hr') {
         navigate('/admin/dashboard');
       } else {
         navigate('/employee/dashboard');
@@ -33,9 +33,9 @@ export function Login() {
   };
 
   const demoProfiles = [
-    { name: 'Admin User', id: 'OIPRSH20220001', pass: 'Demo@123', role: 'Admin' },
-    { name: 'Sarah Connor', id: 'OISACO20260002', pass: 'password123', role: 'Employee' },
-    { name: 'David Miller', id: 'OIDAMI20260003', pass: 'password123', role: 'Employee' }
+    { name: 'Priya Sharma', id: 'OIPRSH20220001', pass: 'Demo@123', role: 'Super Admin' },
+    { name: 'Arjun Mehta', id: 'OIARME20230001', pass: 'Demo@123', role: 'HR Manager' },
+    { name: 'Sarah Connor', id: 'OISACO20260002', pass: 'password123', role: 'Employee' }
   ];
 
   const handleQuickLogin = (profile) => {
