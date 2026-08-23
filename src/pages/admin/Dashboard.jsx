@@ -34,6 +34,8 @@ export function AdminDashboard() {
   });
   
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [hrProfiles, setHrProfiles] = useState([]);
+  const [employeeProfiles, setEmployeeProfiles] = useState([]);
 
   const fetchDashboardData = async () => {
     try {
@@ -56,6 +58,18 @@ export function AdminDashboard() {
       if (resLeaves.ok) {
         const data = await resLeaves.json();
         setPendingRequests(data.filter(l => l.status === 'Pending').slice(0, 5)); // Show latest 5
+      }
+
+      // Fetch employees for directory stack
+      const resEmp = await fetch('http://localhost:5000/api/data/employees', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resEmp.ok) {
+        const data = await resEmp.json();
+        const hrs = data.filter(emp => emp.role === 'hr' || emp.role === 'admin');
+        const emps = data.filter(emp => emp.role !== 'hr' && emp.role !== 'admin');
+        setHrProfiles(hrs);
+        setEmployeeProfiles(emps.slice(0, 5)); // show latest 5
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data');
@@ -180,6 +194,89 @@ export function AdminDashboard() {
         ) : (
           <div className="p-8 text-center text-sm text-[#6B7280]">No pending requests currently.</div>
         )}
+      </div>
+
+      {/* Professional Profiles Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {/* HR Profiles Stack */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <h3 className="text-base font-semibold text-[#171923] font-serif">HR Profiles</h3>
+            <span className="text-xs font-medium text-gray-500">{hrProfiles.length} Members</span>
+          </div>
+          {hrProfiles.length > 0 ? (
+            <div className="divide-y divide-gray-50 flex-1">
+              {hrProfiles.map(emp => (
+                <div key={emp._id} className="px-5 py-4 flex items-center justify-between hover:bg-[#502D55]/5 transition-colors cursor-pointer group" onClick={() => navigate('/admin/employees')}>
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#171923] to-[#2D1B33] text-white flex items-center justify-center text-xs font-bold shadow-sm">
+                        {emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() : 'HR'}
+                      </div>
+                      <div className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-white bg-white">
+                        <span className={`flex h-2.5 w-2.5 rounded-full ${emp.status === 'Active' || !emp.status ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-[#171923] group-hover:text-[#502D55] transition-colors">{emp.name}</p>
+                        <span className="inline-flex items-center rounded-md bg-[#171923]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#171923] shrink-0 uppercase tracking-wider">
+                          {emp.role}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#6B7280] font-medium mt-0.5">
+                        {emp.position} • {emp.department}
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight size={16} className="text-gray-300 group-hover:text-[#502D55] transition-colors" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-sm text-[#6B7280] flex-1 flex items-center justify-center">No HR profiles found.</div>
+          )}
+        </div>
+
+        {/* Employee Profiles Stack */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <h3 className="text-base font-semibold text-[#171923] font-serif">Recent Employees</h3>
+            <button onClick={() => navigate('/admin/employees')} className="text-xs font-medium text-[#502D55] hover:text-[#935073] flex items-center gap-1">View All <ArrowRight size={14} /></button>
+          </div>
+          {employeeProfiles.length > 0 ? (
+            <div className="divide-y divide-gray-50 flex-1">
+              {employeeProfiles.map(emp => (
+                <div key={emp._id} className="px-5 py-4 flex items-center justify-between hover:bg-[#502D55]/5 transition-colors cursor-pointer group" onClick={() => navigate('/admin/employees')}>
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#502D55] to-[#935073] text-white flex items-center justify-center text-xs font-bold shadow-sm">
+                        {emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() : 'EM'}
+                      </div>
+                      <div className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-white bg-white">
+                        <span className={`flex h-2.5 w-2.5 rounded-full ${emp.status === 'Active' || !emp.status ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-[#171923] group-hover:text-[#502D55] transition-colors">{emp.name}</p>
+                        <span className="inline-flex items-center rounded-md bg-[#502D55]/5 px-1.5 py-0.5 text-[10px] font-mono font-bold text-[#502D55] shrink-0">
+                          {emp.login_id}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#6B7280] font-medium mt-0.5">
+                        {emp.position} • {emp.department}
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowRight size={16} className="text-gray-300 group-hover:text-[#502D55] transition-colors" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-sm text-[#6B7280] flex-1 flex items-center justify-center">No employees found.</div>
+          )}
+        </div>
       </div>
     </div>
   );

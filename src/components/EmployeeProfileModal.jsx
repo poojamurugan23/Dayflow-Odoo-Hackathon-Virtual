@@ -39,31 +39,36 @@ export function EmployeeProfileModal({ employee, onClose, isAdmin = true }) {
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-5xl border border-gray-100 max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
-        {/* Header Section */}
-        <div className="bg-gradient-to-r from-[#502D55] to-[#935073] p-6 text-white relative shrink-0">
-          <button onClick={onClose} className="absolute top-4 right-4 h-8 w-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-colors">
+        {/* Premium Header Section */}
+        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-[#171923] via-[#2D1B33] to-[#502D55] p-8 text-white">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+          <button onClick={onClose} className="absolute top-6 right-6 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white flex items-center justify-center transition-all z-10">
             <X size={18} />
           </button>
-          <div className="flex items-end gap-5">
-            <div className="h-20 w-20 rounded-2xl bg-white border-4 border-white/20 shadow-md flex items-center justify-center text-[#502D55] text-3xl font-bold bg-gradient-to-br from-purple-50 to-pink-50">
+          <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-end gap-6 text-center sm:text-left">
+            <div className="h-24 w-24 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl flex items-center justify-center text-white text-4xl font-bold relative group">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
               {employee.avatar || employee.name?.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()}
             </div>
-            <div className="pb-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold font-serif">{employee.name}</h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-400/20 text-green-100 uppercase border border-green-400/30">Active</span>
+            <div className="pb-2">
+              <div className="flex flex-col sm:flex-row items-center gap-3 mb-2">
+                <h2 className="text-3xl font-bold font-serif tracking-tight">{employee.name}</h2>
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${employee.status === 'Active' || !employee.status ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'}`}>
+                  {employee.status || 'Active'}
+                </span>
               </div>
-              <p className="text-sm text-purple-100 font-medium">{employee.position} • {employee.department}</p>
+              <p className="text-sm text-gray-300 font-medium tracking-wide">{employee.position} <span className="opacity-50 mx-1">•</span> {employee.department}</p>
             </div>
           </div>
         </div>
 
-        {/* Tabs Row */}
-        <div className="px-6 border-b border-gray-200 bg-gray-50 shrink-0">
-          <div className="flex gap-2 pt-4">
+        {/* Elegant Tabs Row */}
+        <div className="px-8 border-b border-gray-100 bg-white shrink-0 relative z-10 shadow-[0_4px_20px_-15px_rgba(0,0,0,0.1)]">
+          <div className="flex gap-1 pt-4">
             {TABS.map(t => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
-                className={`px-6 py-2.5 text-sm font-semibold rounded-t-lg transition-all ${activeTab === t.id ? 'bg-[#502D55] text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-100 border border-b-0 border-gray-200'}`}>
+                className={`px-6 py-3 text-sm font-bold rounded-t-xl transition-all relative overflow-hidden ${activeTab === t.id ? 'text-[#502D55] bg-gray-50/80 border-t border-l border-r border-gray-100' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50/50'}`}>
+                {activeTab === t.id && <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#502D55] to-[#935073]"></div>}
                 {t.label}
               </button>
             ))}

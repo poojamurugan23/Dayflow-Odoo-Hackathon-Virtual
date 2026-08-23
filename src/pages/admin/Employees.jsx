@@ -132,7 +132,8 @@ export function AdminEmployees() {
       });
       if (response.ok) {
         const data = await response.json();
-        const mapped = data.map(emp => ({
+        const filteredData = data.filter(emp => emp.role !== 'hr');
+        const mapped = filteredData.map(emp => ({
           ...emp, // Spread all fields including new schema fields
           id: emp._id,
           employeeId: emp.login_id,
@@ -254,55 +255,56 @@ export function AdminEmployees() {
         </div>
       </div>
 
-      {/* Table View */}
+      {/* Stacked View */}
       {view === 'table' ? (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/50">
-                  <th className="text-left px-5 py-3 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Employee</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-[#6B7280] uppercase tracking-wider">ID</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Department</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Role</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Manager</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Status</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Joined</th>
-                  <th className="text-center px-5 py-3 text-xs font-medium text-[#6B7280] uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filtered.map(emp => (
-                  <tr key={emp.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-[#502D55] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">{emp.avatar}</div>
-                        <div><p className="font-medium text-[#171923]">{emp.name}</p><p className="text-xs text-[#6B7280]">{emp.email}</p></div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-[#6B7280] font-mono text-xs">{emp.employeeId}</td>
-                    <td className="px-5 py-3.5 text-[#6B7280]">{emp.department}</td>
-                    <td className="px-5 py-3.5 text-[#6B7280]">{emp.position}</td>
-                    <td className="px-5 py-3.5 text-[#6B7280]">{emp.manager}</td>
-                    <td className="px-5 py-3.5">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        emp.status === 'Active' ? 'bg-green-50 text-green-700' : emp.status === 'On Leave' ? 'bg-gray-100 text-gray-600' : 'bg-gray-100 text-gray-600'
-                      }`}>{emp.status}</span>
-                    </td>
-                    <td className="px-5 py-3.5 text-[#6B7280] text-xs">{formatDate(emp.joiningDate)}</td>
-                    <td className="px-5 py-3.5 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => setSelectedEmployee(emp)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-[#502D55]" title="View Profile"><Eye size={16} /></button>
-                        <button onClick={() => toast(`Editing ${emp.name}'s profile`)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-[#502D55]" title="Edit"><Edit3 size={16} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="space-y-3">
+          {filtered.map(emp => (
+            <div key={emp.id} onClick={() => setSelectedEmployee(emp)}
+              className="group bg-white rounded-xl border border-gray-200 p-4 hover:border-[#502D55]/40 hover:shadow-md transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4"
+            >
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="relative shrink-0">
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#502D55] to-[#935073] text-white flex items-center justify-center text-sm font-bold shadow-sm">
+                    {emp.avatar}
+                  </div>
+                  <div className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-white bg-white">
+                    <span className={`flex h-2.5 w-2.5 rounded-full ${emp.status === 'Active' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-[#171923] truncate">{emp.name}</h3>
+                    <span className="inline-flex items-center rounded-md bg-[#502D55]/5 px-1.5 py-0.5 text-[10px] font-mono font-bold text-[#502D55] shrink-0">
+                      {emp.employeeId}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 truncate mt-0.5">{emp.email} • {emp.phone}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-6 text-sm md:w-1/3 justify-between md:justify-end shrink-0 pl-16 md:pl-0">
+                <div className="text-left md:text-right flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-[#171923] truncate">{emp.position}</p>
+                  <p className="text-[11px] text-gray-500 truncate flex items-center md:justify-end gap-1 mt-0.5">
+                    <Briefcase size={10} /> {emp.department}
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-[10px] text-gray-400 uppercase font-semibold">Joined</p>
+                    <p className="text-xs font-medium text-gray-700">{formatDate(emp.joiningDate)}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedEmployee(emp); }} className="p-2 rounded-lg hover:bg-[#502D55]/5 text-gray-400 hover:text-[#502D55] transition-colors" title="View Profile"><Eye size={18} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); toast(`Editing ${emp.name}'s profile`); }} className="p-2 rounded-lg hover:bg-[#502D55]/5 text-gray-400 hover:text-[#502D55] transition-colors" title="Edit"><Edit3 size={18} /></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
           {filtered.length === 0 && (
-            <div className="p-12 text-center"><p className="text-sm text-[#6B7280]">No employees match your filters.</p></div>
+            <div className="p-12 text-center bg-white rounded-xl border border-gray-200"><p className="text-sm text-[#6B7280]">No employees match your filters.</p></div>
           )}
         </div>
       ) : (
