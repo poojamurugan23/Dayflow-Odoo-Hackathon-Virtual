@@ -46,6 +46,56 @@ app.get('/api/trigger-seed', (req, res) => {
 
 
 
+// Bulk import endpoint (temporary for hackathon migration)
+app.post('/api/import-all', async (req, res) => {
+  try {
+    const User = require('./models/User');
+    const Attendance = require('./models/Attendance');
+    const LeaveRequest = require('./models/LeaveRequest');
+    const Payroll = require('./models/Payroll');
+    const Notification = require('./models/Notification');
+
+    const { users, attendance, leaves, payrolls, notifications, clearFirst } = req.body;
+
+    if (clearFirst) {
+      await User.deleteMany({});
+      await Attendance.deleteMany({});
+      await LeaveRequest.deleteMany({});
+      await Payroll.deleteMany({});
+      await Notification.deleteMany({});
+      console.log('Cleared all existing data.');
+    }
+
+    let counts = { users: 0, attendance: 0, leaves: 0, payrolls: 0, notifications: 0 };
+
+    if (users && users.length) {
+      await User.insertMany(users, { ordered: false }).catch(() => {});
+      counts.users = users.length;
+    }
+    if (attendance && attendance.length) {
+      await Attendance.insertMany(attendance, { ordered: false }).catch(() => {});
+      counts.attendance = attendance.length;
+    }
+    if (leaves && leaves.length) {
+      await LeaveRequest.insertMany(leaves, { ordered: false }).catch(() => {});
+      counts.leaves = leaves.length;
+    }
+    if (payrolls && payrolls.length) {
+      await Payroll.insertMany(payrolls, { ordered: false }).catch(() => {});
+      counts.payrolls = payrolls.length;
+    }
+    if (notifications && notifications.length) {
+      await Notification.insertMany(notifications, { ordered: false }).catch(() => {});
+      counts.notifications = notifications.length;
+    }
+
+    res.json({ message: 'Import successful!', counts });
+  } catch (error) {
+    console.error('Import error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
