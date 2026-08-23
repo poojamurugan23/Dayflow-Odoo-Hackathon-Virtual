@@ -269,13 +269,15 @@ router.post('/employees', authMiddleware, async (req, res) => {
       };
 
       if (process.env.EMAIL_PASSWORD) {
-        await transporter.sendMail(mailOptions);
-        console.log(`Welcome email sent to ${email}`);
+        // Send email asynchronously without blocking the response
+        transporter.sendMail(mailOptions)
+          .then(() => console.log(`Welcome email sent to ${email}`))
+          .catch(err => console.error('Failed to send welcome email:', err));
       } else {
         console.warn('EMAIL_PASSWORD not set in .env; skipping email sending.');
       }
     } catch (mailError) {
-      console.error('Failed to send welcome email:', mailError);
+      console.error('Email setup error:', mailError);
     }
     
     // Return the generated password so the Admin can share it with the employee
