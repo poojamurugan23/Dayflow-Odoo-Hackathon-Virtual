@@ -169,13 +169,14 @@ router.post('/employees', authMiddleware, async (req, res) => {
     
     // --- Send Welcome Email via Nodemailer ---
     try {
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: 'odooindiahawkinshackerzzz@gmail.com',
-          pass: process.env.EMAIL_PASSWORD || 'missing_password'
-        }
-      });
+        const emailPass = (process.env.EMAIL_PASSWORD || 'missing_password').replace(/["' ]/g, '');
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: 'odooindiahawkinshackerzzz@gmail.com',
+            pass: emailPass
+          }
+        });
 
       const mailOptions = {
         from: '"Odoo-HRMS Team" <odooindiahawkinshackerzzz@gmail.com>',
