@@ -183,18 +183,17 @@ export function SuperAdminMeetings() {
                     <div className="flex flex-col mt-1 bg-green-50/50 p-2.5 rounded-lg border border-green-100">
                       <span className="text-xs font-semibold text-green-800 mb-1.5">Accepted By:</span>
                       <div className="flex flex-wrap gap-1.5">
-                        {meeting.accepted_by.map(userId => {
-                          const emp = employees.find(e => e._id === userId || e.id === userId);
-                          if (!emp) return null;
+                        {meeting.accepted_by.map(user => {
+                          if (!user) return null;
                           return (
-                            <div key={userId} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-full border border-green-200 shadow-sm" title={emp.name}>
+                            <div key={user._id || user.id} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-full border border-green-200 shadow-sm" title={user.name}>
                               <img 
-                                src={emp.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`} 
-                                alt={emp.name} 
+                                src={user.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=random`} 
+                                alt={user.name || 'User'} 
                                 className="w-5 h-5 rounded-full object-cover"
                                 crossOrigin="anonymous"
                               />
-                              <span className="text-[10px] font-bold text-gray-700">{emp.name.split(' ')[0]}</span>
+                              <span className="text-[10px] font-bold text-gray-700">{user.name ? user.name.split(' ')[0] : 'Unknown'}</span>
                             </div>
                           );
                         })}
@@ -205,18 +204,17 @@ export function SuperAdminMeetings() {
                     <div className="flex flex-col mt-1 bg-red-50/50 p-2.5 rounded-lg border border-red-100">
                       <span className="text-xs font-semibold text-red-800 mb-1.5">Declined By:</span>
                       <div className="flex flex-wrap gap-1.5">
-                        {meeting.rejected_by.map(userId => {
-                          const emp = employees.find(e => e._id === userId || e.id === userId);
-                          if (!emp) return null;
+                        {meeting.rejected_by.map(user => {
+                          if (!user) return null;
                           return (
-                            <div key={userId} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-full border border-red-200 shadow-sm" title={emp.name}>
+                            <div key={user._id || user.id} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-full border border-red-200 shadow-sm" title={user.name}>
                               <img 
-                                src={emp.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random`} 
-                                alt={emp.name} 
+                                src={user.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=random`} 
+                                alt={user.name || 'User'} 
                                 className="w-5 h-5 rounded-full object-cover"
                                 crossOrigin="anonymous"
                               />
-                              <span className="text-[10px] font-bold text-gray-700">{emp.name.split(' ')[0]}</span>
+                              <span className="text-[10px] font-bold text-gray-700">{user.name ? user.name.split(' ')[0] : 'Unknown'}</span>
                             </div>
                           );
                         })}

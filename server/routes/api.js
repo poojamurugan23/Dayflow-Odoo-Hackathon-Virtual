@@ -497,7 +497,7 @@ const Notification = require('../models/Notification');
 router.get('/timeoff', authMiddleware, async (req, res) => {
   try {
     let leaves;
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'admin' || req.user.role === 'hr') {
       leaves = await LeaveRequest.find()
         .sort({ createdAt: -1 })
         .populate('employee_id', 'name login_id department position');
@@ -516,7 +516,7 @@ router.post('/timeoff', authMiddleware, async (req, res) => {
     const { type, startDate, endDate, reason, employeeId } = req.body;
 
     // Admin can post on behalf of any employee; otherwise use logged-in user
-    const targetEmployeeId = (req.user.role === 'admin' && employeeId) ? employeeId : req.user.id;
+    const targetEmployeeId = ((req.user.role === 'admin' || req.user.role === 'hr') && employeeId) ? employeeId : req.user.id;
 
     const leave = new LeaveRequest({
       employee_id: targetEmployeeId,
@@ -699,7 +699,7 @@ router.post('/profile/parse-resume', authMiddleware, async (req, res) => {
 router.get('/payroll', authMiddleware, async (req, res) => {
   try {
     let payrolls;
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'admin' || req.user.role === 'hr') {
       payrolls = await Payroll.find()
         .sort({ createdAt: -1 })
         .populate('employee_id', 'name login_id department position');
@@ -862,7 +862,7 @@ router.patch('/profile', authMiddleware, async (req, res) => {
     } = req.body;
 
     // Admin can update anyone's profile if they pass employeeId, otherwise users update their own
-    const targetUserId = (req.user.role === 'admin' && employeeId) ? employeeId : req.user.id;
+    const targetUserId = ((req.user.role === 'admin' || req.user.role === 'hr') && employeeId) ? employeeId : req.user.id;
 
     const user = await User.findById(targetUserId);
     if (!user) {
@@ -892,7 +892,7 @@ router.patch('/profile', authMiddleware, async (req, res) => {
     if (pin_code !== undefined) user.pin_code = pin_code;
 
     // Admin only updates for salary
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'admin' || req.user.role === 'hr') {
       if (month_wage !== undefined) user.month_wage = Number(month_wage);
       if (working_days !== undefined) user.working_days = Number(working_days);
       if (break_time !== undefined) user.break_time = Number(break_time);
@@ -917,7 +917,7 @@ router.patch('/profile', authMiddleware, async (req, res) => {
 router.get('/complaints', authMiddleware, async (req, res) => {
   try {
     let complaints;
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'admin' || req.user.role === 'hr') {
       complaints = await Complaint.find()
         .sort({ createdAt: -1 })
         .populate('user_id', 'name login_id department position role');
@@ -993,16 +993,16 @@ router.get('/meetings', authMiddleware, async (req, res) => {
   try {
     // Admin sees all, others see meetings they are participating in
     let meetings;
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'admin' || req.user.role === 'hr') {
       meetings = await Meeting.find()
         .sort({ date: 1 })
-        .populate('host_id participants accepted_by rejected_by', 'name email login_id');
+        .populate('host_id participants accepted_by rejected_by', 'name email login_id profile_picture');
     } else {
       meetings = await Meeting.find({
         $or: [{ host_id: req.user.id }, { participants: req.user.id }]
       })
       .sort({ date: 1 })
-      .populate('host_id participants accepted_by rejected_by', 'name email login_id');
+      .populate('host_id participants accepted_by rejected_by', 'name email login_id profile_picture');
     }
     res.json(meetings);
   } catch (error) {
