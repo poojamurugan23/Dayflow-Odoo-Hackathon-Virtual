@@ -1,38 +1,49 @@
-import { useState } from 'react';
-import { X } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { X, Save, Edit3, Loader2, Download, Printer } from 'lucide-react';
 import { formatDate } from '../lib/mockData';
 
-export function EmployeeProfileModal({ employee, onClose, isAdmin = true }) {
+export function EmployeeProfileModal({ employee, onClose, isHrView = false, refreshList }) {
   const [activeTab, setActiveTab] = useState('resume');
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({ ...employee });
 
-  // --- Dynamic Live Salary Calculator State ---
-  const [monthWage, setMonthWage] = useState(50000);
-  const [workingDays, setWorkingDays] = useState(5);
-  const [breakTime, setBreakTime] = useState(1);
-
-  // Auto Calculations based on monthWage
-  const yearlyWage = monthWage * 12;
-  const basicSalary = monthWage * 0.50; // 50% of Wage
-  const hra = basicSalary * 0.50; // 50% of Basic (25% of Wage)
-  const standardAllowance = (basicSalary * 0.16668); // ~4167
-  const performanceBonus = (basicSalary * 0.0833); // ~2082.50
-  const lta = (basicSalary * 0.0833); // ~2082.50
-  const subTotalComponents = basicSalary + hra + standardAllowance + performanceBonus + lta;
-  const fixedAllowance = Math.max(0, monthWage - subTotalComponents); // Remainder
-
-  // PF & Tax Deductions
-  const pfEmployee = basicSalary * 0.12; // 12% of Basic
-  const pfEmployer = basicSalary * 0.12; // 12% of Basic
-  const professionalTax = 200.00;
+  const canEdit = !isHrView || employee.role === 'employee';
 
   const TABS = [
     { id: 'resume', label: 'Resume' },
     { id: 'private', label: 'Private Info' },
-    ...(isAdmin ? [{ id: 'salary', label: 'Salary Info' }] : []),
+    { id: 'salary', label: 'Salary Info' },
+    { id: 'idcard', label: 'ID Card' },
   ];
 
-  const dummySkills = ['Leadership', 'HR Management', 'Payroll', 'Compliance', 'Team Building'];
-  const dummyCerts = ['SHRM-CP Certified', 'PMP – Project Management Professional'];
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('dayflow_token');
+      const response = await fetch(`http://localhost:5000/api/data/employees/${employee.id || employee._id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+      if (response.ok) {
+        setIsEditing(false);
+        if (refreshList) refreshList();
+      }
+    } catch (error) {
+      console.error('Update failed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -42,13 +53,28 @@ export function EmployeeProfileModal({ employee, onClose, isAdmin = true }) {
         {/* Premium Header Section */}
         <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-[#171923] via-[#2D1B33] to-[#502D55] p-8 text-white">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-          <button onClick={onClose} className="absolute top-6 right-6 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white flex items-center justify-center transition-all z-10">
-            <X size={18} />
-          </button>
+          
+          <div className="absolute top-6 right-6 flex items-center gap-3 z-10">
+            {canEdit && (
+              <button onClick={() => isEditing ? handleSave() : setIsEditing(true)} disabled={loading}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md transition-all ${isEditing ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg' : 'bg-white/10 hover:bg-white/20 text-white'}`}>
+                {loading ? <Loader2 size={16} className="animate-spin" /> : (isEditing ? <Save size={16} /> : <Edit3 size={16} />)}
+                {isEditing ? 'Save Changes' : 'Edit Profile'}
+              </button>
+            )}
+            <button onClick={onClose} className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white flex items-center justify-center transition-all">
+              <X size={18} />
+            </button>
+          </div>
+
           <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-end gap-6 text-center sm:text-left">
-            <div className="h-24 w-24 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl flex items-center justify-center text-white text-4xl font-bold relative group">
+            <div className="h-24 w-24 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl flex items-center justify-center text-white text-4xl font-bold relative group overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              {employee.avatar || employee.name?.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()}
+              {employee.profile_picture ? (
+                <img src={employee.profile_picture} alt={employee.name} className="h-full w-full object-cover" />
+              ) : (
+                employee.avatar || employee.name?.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()
+              )}
             </div>
             <div className="pb-2">
               <div className="flex flex-col sm:flex-row items-center gap-3 mb-2">
@@ -56,6 +82,7 @@ export function EmployeeProfileModal({ employee, onClose, isAdmin = true }) {
                 <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${employee.status === 'Active' || !employee.status ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'}`}>
                   {employee.status || 'Active'}
                 </span>
+                {employee.role === 'hr' && <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/30">HR</span>}
               </div>
               <p className="text-sm text-gray-300 font-medium tracking-wide">{employee.position} <span className="opacity-50 mx-1">•</span> {employee.department}</p>
             </div>
@@ -84,22 +111,31 @@ export function EmployeeProfileModal({ employee, onClose, isAdmin = true }) {
               <div className="lg:col-span-2 space-y-5">
                 <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
                   <h3 className="text-xs font-bold text-[#171923] uppercase tracking-wider mb-3">ABOUT</h3>
-                  <p className="text-xs text-[#6B7280] leading-relaxed">
-                    {employee.about || "No information provided."}
-                  </p>
+                  {isEditing ? (
+                    <textarea name="about" value={formData.about || ''} onChange={handleChange} rows="3" className="w-full text-xs text-[#171923] p-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#502D55]" />
+                  ) : (
+                    <p className="text-xs text-[#6B7280] leading-relaxed">{employee.about || "No information provided."}</p>
+                  )}
                 </div>
                 <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
                   <h3 className="text-xs font-bold text-[#171923] uppercase tracking-wider mb-3">WHAT I LOVE ABOUT MY JOB</h3>
-                  <p className="text-xs text-[#6B7280] leading-relaxed">
-                    {employee.job_love || "No information provided."}
-                  </p>
+                  {isEditing ? (
+                    <textarea name="job_love" value={formData.job_love || ''} onChange={handleChange} rows="3" className="w-full text-xs text-[#171923] p-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#502D55]" />
+                  ) : (
+                    <p className="text-xs text-[#6B7280] leading-relaxed">{employee.job_love || "No information provided."}</p>
+                  )}
                 </div>
-                <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-                  <h3 className="text-xs font-bold text-[#171923] uppercase tracking-wider mb-3">MY INTERESTS AND HOBBIES</h3>
-                  <p className="text-xs text-[#6B7280] leading-relaxed">
-                    {employee.hobbies || "No information provided."}
-                  </p>
-                </div>
+                {employee.resume_url && (
+                  <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xs font-bold text-[#171923] uppercase tracking-wider mb-1">Attached Resume</h3>
+                      <p className="text-xs text-[#6B7280]">Download or view the employee's uploaded resume.</p>
+                    </div>
+                    <a href={employee.resume_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-[#502D55] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#683b6e] transition-colors shadow-md">
+                      <Download size={16} /> Download
+                    </a>
+                  </div>
+                )}
               </div>
               <div className="space-y-5">
                 <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm min-h-[180px]">
@@ -109,16 +145,6 @@ export function EmployeeProfileModal({ employee, onClose, isAdmin = true }) {
                       employee.skills.map(s => <span key={s} className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-1 text-xs font-medium text-[#171923] shadow-sm">{s}</span>)
                     ) : (
                       <span className="text-xs text-gray-500">No skills added.</span>
-                    )}
-                  </div>
-                </div>
-                <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm min-h-[180px]">
-                  <h3 className="text-xs font-bold text-[#171923] uppercase tracking-wider mb-4">CERTIFICATION</h3>
-                  <div className="space-y-2 mb-4">
-                    {(employee.certifications || []).length > 0 ? (
-                      employee.certifications.map((c, i) => <div key={i} className="p-2.5 rounded-lg bg-gray-50 border border-gray-100 text-xs font-medium text-[#171923] shadow-sm">{c}</div>)
-                    ) : (
-                      <span className="text-xs text-gray-500">No certifications added.</span>
                     )}
                   </div>
                 </div>
@@ -134,216 +160,122 @@ export function EmployeeProfileModal({ employee, onClose, isAdmin = true }) {
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-[#502D55] uppercase tracking-wider">Personal Information</h4>
                   <div className="grid grid-cols-2 gap-y-3 text-sm">
-                    <span className="text-gray-500 text-xs">Date of Birth</span><span className="font-semibold text-gray-800 text-xs">{employee.dob ? new Date(employee.dob).toLocaleDateString() : '—'}</span>
-                    <span className="text-gray-500 text-xs">Nationality</span><span className="font-semibold text-gray-800 text-xs">{employee.nationality || '—'}</span>
-                    <span className="text-gray-500 text-xs">Gender</span><span className="font-semibold text-gray-800 text-xs">{employee.gender || '—'}</span>
-                    <span className="text-gray-500 text-xs">Marital Status</span><span className="font-semibold text-gray-800 text-xs">{employee.marital_status || '—'}</span>
-                    <span className="text-gray-500 text-xs">Personal Email</span><span className="font-semibold text-gray-800 text-xs">{employee.email}</span>
-                    <span className="text-gray-500 text-xs">Phone</span><span className="font-semibold text-gray-800 text-xs">{employee.phone}</span>
-                    <span className="text-gray-500 text-xs">Joining Date</span><span className="font-semibold text-gray-800 text-xs">{formatDate(employee.joiningDate || new Date())}</span>
+                    <span className="text-gray-500 text-xs flex items-center">Date of Birth</span>
+                    {isEditing ? <input type="date" name="dob" value={formData.dob ? new Date(formData.dob).toISOString().split('T')[0] : ''} onChange={handleChange} className="border p-1 text-xs rounded w-full" /> : <span className="font-semibold text-gray-800 text-xs">{employee.dob ? new Date(employee.dob).toLocaleDateString() : '—'}</span>}
+                    
+                    <span className="text-gray-500 text-xs flex items-center">Gender</span>
+                    {isEditing ? (
+                      <select name="gender" value={formData.gender || ''} onChange={handleChange} className="border p-1 text-xs rounded w-full">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    ) : <span className="font-semibold text-gray-800 text-xs">{employee.gender || '—'}</span>}
+                    
+                    <span className="text-gray-500 text-xs flex items-center">Personal Email</span>
+                    {isEditing ? <input type="email" name="email" value={formData.email || ''} onChange={handleChange} className="border p-1 text-xs rounded w-full" /> : <span className="font-semibold text-gray-800 text-xs">{employee.email}</span>}
+                    
+                    <span className="text-gray-500 text-xs flex items-center">Phone</span>
+                    {isEditing ? <input type="text" name="phone" value={formData.phone || ''} onChange={handleChange} className="border p-1 text-xs rounded w-full" /> : <span className="font-semibold text-gray-800 text-xs">{employee.phone}</span>}
                   </div>
                 </div>
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-[#502D55] uppercase tracking-wider">Bank Details</h4>
                   <div className="grid grid-cols-2 gap-y-3 text-sm">
-                    <span className="text-gray-500 text-xs">Account Number</span><span className="font-mono font-bold text-[#502D55] text-xs">{employee.account_number || '—'}</span>
-                    <span className="text-gray-500 text-xs">Bank Name</span><span className="font-semibold text-gray-800 text-xs">{employee.bank_name || '—'}</span>
-                    <span className="text-gray-500 text-xs">IFSC Code</span><span className="font-mono font-bold text-gray-800 text-xs">{employee.ifsc_code || '—'}</span>
-                    <span className="text-gray-500 text-xs">PAN No</span><span className="font-mono font-bold text-gray-800 text-xs">—</span>
-                    <span className="text-gray-500 text-xs">UAN No</span><span className="font-mono font-bold text-gray-800 text-xs">—</span>
-                    <span className="text-gray-500 text-xs">Employee ID</span><span className="font-mono font-bold text-gray-800 text-xs">{employee.employeeId || employee.login_id || '—'}</span>
+                    <span className="text-gray-500 text-xs flex items-center">Account Number</span>
+                    {isEditing ? <input type="text" name="account_number" value={formData.account_number || ''} onChange={handleChange} className="border p-1 text-xs rounded w-full font-mono" /> : <span className="font-mono font-bold text-[#502D55] text-xs">{employee.account_number || '—'}</span>}
+                    
+                    <span className="text-gray-500 text-xs flex items-center">Bank Name</span>
+                    {isEditing ? <input type="text" name="bank_name" value={formData.bank_name || ''} onChange={handleChange} className="border p-1 text-xs rounded w-full" /> : <span className="font-semibold text-gray-800 text-xs">{employee.bank_name || '—'}</span>}
+                    
+                    <span className="text-gray-500 text-xs flex items-center">IFSC Code</span>
+                    {isEditing ? <input type="text" name="ifsc_code" value={formData.ifsc_code || ''} onChange={handleChange} className="border p-1 text-xs rounded w-full font-mono" /> : <span className="font-mono font-bold text-gray-800 text-xs">{employee.ifsc_code || '—'}</span>}
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* SALARY INFO TAB (Admin-Only Wireframe Implementation with Real-Time Calculations) */}
-          {activeTab === 'salary' && isAdmin && (
+          {/* SALARY INFO TAB */}
+          {activeTab === 'salary' && (
             <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-8 shadow-sm">
-              {/* Header Wage & Schedule Controls (Live Dynamic Inputs) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-6 border-b border-gray-200">
-                {/* Left Wage Controls */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">Month Wage</span>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="number"
-                        value={monthWage}
-                        onChange={e => setMonthWage(Math.max(0, Number(e.target.value) || 0))}
-                        className="w-36 text-sm font-mono font-bold text-[#502D55] border border-gray-200 rounded-lg px-3 py-1.5 text-right focus:border-[#502D55] focus:outline-none"
-                      />
-                      <span className="text-xs text-gray-500 font-medium">/ Month</span>
-                    </div>
+              <div className="flex justify-between items-center pb-4 border-b border-gray-100">
+                <h3 className="text-base font-bold text-[#171923] font-serif">Salary Details</h3>
+                {isEditing ? (
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold">Gross Wage: ₹</span>
+                    <input type="number" name="month_wage" value={formData.month_wage || ''} onChange={handleChange} className="border border-gray-300 rounded p-1 w-24 text-right font-mono" />
                   </div>
+                ) : (
+                  <span className="px-3 py-1 bg-green-50 text-green-700 font-bold rounded-full text-xs border border-green-200">
+                    Gross: ₹{(employee.month_wage || 0).toLocaleString('en-IN')} / month
+                  </span>
+                )}
+              </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">Yearly wage</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-bold text-[#502D55] bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 w-36 text-right">
-                        {yearlyWage.toFixed(2)}
-                      </span>
-                      <span className="text-xs text-gray-500 font-medium">/ Yearly</span>
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-50 pb-2">Components (Monthly)</h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm"><span className="text-gray-600 font-semibold">Basic (50%)</span><span className="font-mono font-bold text-[#171923]">₹{((employee.month_wage || 0) * 0.50).toFixed(2)}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-gray-600 font-semibold">HRA (20%)</span><span className="font-mono font-bold text-[#171923]">₹{((employee.month_wage || 0) * 0.20).toFixed(2)}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-gray-600 font-semibold">Allowances (20%)</span><span className="font-mono font-bold text-[#171923]">₹{((employee.month_wage || 0) * 0.20).toFixed(2)}</span></div>
                   </div>
                 </div>
-
-                {/* Right Schedule Controls */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">No of working days in a week:</span>
-                    <input 
-                      type="number"
-                      value={workingDays}
-                      onChange={e => setWorkingDays(Number(e.target.value))}
-                      className="w-20 text-xs font-mono font-bold text-gray-800 border border-gray-200 rounded-lg px-2.5 py-1.5 text-center focus:border-[#502D55] focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">Break Time:</span>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="number"
-                        value={breakTime}
-                        onChange={e => setBreakTime(Number(e.target.value))}
-                        className="w-20 text-xs font-mono font-bold text-gray-800 border border-gray-200 rounded-lg px-2.5 py-1.5 text-center focus:border-[#502D55] focus:outline-none"
-                      />
-                      <span className="text-xs text-gray-500 font-medium">/ hrs</span>
-                    </div>
+                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-50 pb-2">Deductions (Monthly)</h4>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm"><span className="text-red-600 font-semibold">PF Deduction (10%)</span><span className="font-mono font-bold text-red-600">₹{((employee.month_wage || 0) * 0.10).toFixed(2)}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-red-600 font-semibold">Professional Tax</span><span className="font-mono font-bold text-red-600">₹200.00</span></div>
                   </div>
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* Salary Breakdown: Salary Components (Left) vs PF & Taxes (Right) */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Left Column: Salary Components */}
-                <div className="space-y-5">
-                  <h4 className="text-xs font-bold text-[#502D55] font-serif uppercase tracking-wider pb-2 border-b border-gray-100">
-                    Salary Components
-                  </h4>
-
-                  {/* Basic Salary */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-gray-800">Basic Salary</span>
-                      <div className="flex items-center gap-4">
-                        <span className="font-mono font-bold text-[#171923]">{basicSalary.toFixed(2)} ₹ / month</span>
-                        <span className="font-mono font-semibold text-[#502D55]">50.00 %</span>
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-gray-400 italic">Define Basic salary from company cost compute is based on monthly Wages</p>
-                  </div>
-
-                  {/* House Rent Allowance */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-gray-800">House Rent Allowance</span>
-                      <div className="flex items-center gap-4">
-                        <span className="font-mono font-bold text-[#171923]">{hra.toFixed(2)} ₹ / month</span>
-                        <span className="font-mono font-semibold text-[#502D55]">50.00 %</span>
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-gray-400 italic">HRA provided to employees 50% of the basic salary</p>
-                  </div>
-
-                  {/* Standard Allowance */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-gray-800">Standard Allowance</span>
-                      <div className="flex items-center gap-4">
-                        <span className="font-mono font-bold text-[#171923]">{standardAllowance.toFixed(2)} ₹ / month</span>
-                        <span className="font-mono font-semibold text-[#502D55]">16.67 %</span>
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-gray-400 italic">A standard allowance is a predetermined, fixed amount provided to employee as part of their salary</p>
-                  </div>
-
-                  {/* Performance Bonus */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-gray-800">Performance Bonus</span>
-                      <div className="flex items-center gap-4">
-                        <span className="font-mono font-bold text-[#171923]">{performanceBonus.toFixed(2)} ₹ / month</span>
-                        <span className="font-mono font-semibold text-[#502D55]">8.33 %</span>
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-gray-400 italic">Variable amount paid during payroll. The value defined by the company and calculated as a % of the basic salary</p>
-                  </div>
-
-                  {/* Leave Travel Allowance */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-gray-800">Leave Travel Allowance</span>
-                      <div className="flex items-center gap-4">
-                        <span className="font-mono font-bold text-[#171923]">{lta.toFixed(2)} ₹ / month</span>
-                        <span className="font-mono font-semibold text-[#502D55]">8.33 %</span>
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-gray-400 italic">LTA is paid by the company to employee to cover their travel expenses and calculated as a % of the basic salary</p>
-                  </div>
-
-                  {/* Fixed Allowance */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-gray-800">Fixed Allowance</span>
-                      <div className="flex items-center gap-4">
-                        <span className="font-mono font-bold text-[#171923]">{fixedAllowance.toFixed(2)} ₹ / month</span>
-                        <span className="font-mono font-semibold text-[#502D55]">
-                          {monthWage > 0 ? ((fixedAllowance / monthWage) * 100).toFixed(2) : '0.00'} %
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-gray-400 italic">Fixed allowance portion of wages is determined after calculating all salary components</p>
+          {/* ID CARD TAB */}
+          {activeTab === 'idcard' && (
+            <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-2xl border border-gray-200">
+              <button className="mb-6 flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors" onClick={() => window.print()}>
+                <Printer size={16} /> Print ID Card
+              </button>
+              
+              {/* ID Card UI */}
+              <div id="print-id-card" className="w-[300px] h-[480px] bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden relative flex flex-col">
+                <div className="h-32 bg-gradient-to-br from-[#502D55] to-[#935073] relative flex justify-center pt-6">
+                  <h1 className="text-white font-bold tracking-widest text-lg uppercase">{employee.company_name || 'Odoo India'}</h1>
+                  <div className="absolute -bottom-16 w-32 h-32 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
+                    {employee.profile_picture ? (
+                      <img src={employee.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center text-4xl text-gray-400 font-bold">{employee.avatar}</div>
+                    )}
                   </div>
                 </div>
-
-                {/* Right Column: PF Contribution & Tax Deductions */}
-                <div className="space-y-6">
-                  {/* PF Contribution */}
-                  <div className="space-y-4">
-                    <h4 className="text-xs font-bold text-[#502D55] font-serif uppercase tracking-wider pb-2 border-b border-gray-100">
-                      Provident Fund (PF) Contribution
-                    </h4>
-
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="font-semibold text-gray-800">Employee</span>
-                        <div className="flex items-center gap-4">
-                          <span className="font-mono font-bold text-[#171923]">{pfEmployee.toFixed(2)} ₹ / month</span>
-                          <span className="font-mono font-semibold text-[#935073]">12.00 %</span>
-                        </div>
-                      </div>
-                      <p className="text-[11px] text-gray-400 italic">PF is calculated based on the basic salary</p>
+                
+                <div className="flex-1 mt-20 px-6 text-center flex flex-col items-center">
+                  <h2 className="text-2xl font-bold text-gray-900 leading-tight">{employee.name}</h2>
+                  <p className="text-sm text-[#502D55] font-semibold mt-1 uppercase tracking-wide">{employee.position}</p>
+                  <div className="w-12 h-1 bg-gray-200 rounded my-4"></div>
+                  
+                  <div className="w-full space-y-2 text-left bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <div className="flex flex-col text-xs">
+                      <span className="text-gray-400 font-semibold uppercase text-[9px] tracking-wider">Employee ID</span>
+                      <span className="font-mono font-bold text-gray-800 text-sm">{employee.employeeId || employee.login_id}</span>
                     </div>
-
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="font-semibold text-gray-800">Employer's</span>
-                        <div className="flex items-center gap-4">
-                          <span className="font-mono font-bold text-[#171923]">{pfEmployer.toFixed(2)} ₹ / month</span>
-                          <span className="font-mono font-semibold text-[#935073]">12.00 %</span>
-                        </div>
-                      </div>
-                      <p className="text-[11px] text-gray-400 italic">PF is calculated based on the basic salary</p>
+                    <div className="flex flex-col text-xs">
+                      <span className="text-gray-400 font-semibold uppercase text-[9px] tracking-wider">Department</span>
+                      <span className="font-semibold text-gray-800">{employee.department}</span>
+                    </div>
+                    <div className="flex flex-col text-xs">
+                      <span className="text-gray-400 font-semibold uppercase text-[9px] tracking-wider">Blood Group</span>
+                      <span className="font-bold text-red-600">O+</span>
                     </div>
                   </div>
-
-                  {/* Tax Deductions */}
-                  <div className="space-y-4 pt-2">
-                    <h4 className="text-xs font-bold text-[#502D55] font-serif uppercase tracking-wider pb-2 border-b border-gray-100">
-                      Tax Deductions
-                    </h4>
-
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="font-semibold text-gray-800">Professional Tax</span>
-                        <span className="font-mono font-bold text-red-600">{professionalTax.toFixed(2)} ₹ / month</span>
-                      </div>
-                      <p className="text-[11px] text-gray-400 italic">Professional Tax deducted from the gross salary</p>
-                    </div>
-                  </div>
+                </div>
+                
+                <div className="h-10 bg-gray-900 text-center flex items-center justify-center">
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">Authorized Signature</p>
                 </div>
               </div>
             </div>

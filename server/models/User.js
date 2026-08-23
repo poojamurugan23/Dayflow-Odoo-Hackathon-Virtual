@@ -19,6 +19,8 @@ const userSchema = new mongoose.Schema({
   hobbies: { type: String, default: 'List your interests and hobbies here.' },
   skills: { type: [String], default: [] },
   certifications: { type: [String], default: [] },
+  profile_picture: { type: String, default: '' },
+  resume_url: { type: String, default: '' },
   
   // Private Info
   address: { type: String, default: '' },
@@ -34,6 +36,10 @@ const userSchema = new mongoose.Schema({
   
   // Salary / Compensation Info
   month_wage: { type: Number, default: 50000 },
+  basic_salary: { type: Number, default: 25000 },
+  hra: { type: Number, default: 10000 },
+  allowances: { type: Number, default: 10000 },
+  pf: { type: Number, default: 5000 },
   working_days: { type: Number, default: 5 },
   break_time: { type: Number, default: 1 }
 }, {

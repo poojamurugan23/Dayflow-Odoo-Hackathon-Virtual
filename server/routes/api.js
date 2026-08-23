@@ -40,7 +40,7 @@ router.post('/employees', authMiddleware, async (req, res) => {
       return res.status(403).json({ message: 'Only admins can create employees' });
     }
 
-    const { name, email, phone, department, position, companyName, joiningDate, monthWage, workingDays, breakTime } = req.body;
+    const { name, email, phone, department, position, companyName, joiningDate, monthWage, workingDays, breakTime, dob, gender, profilePicture, resumeUrl } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -85,11 +85,21 @@ router.post('/employees', authMiddleware, async (req, res) => {
     // Final Login ID: e.g. OIJODO20220001
     const login_id = `${compCode}${nameCode}${dateCode}${serial}`;
 
-    // Auto-generate a completely unique password (e.g. 8 random alphanumeric characters)
-    const crypto = require('crypto');
-    const rawPassword = crypto.randomBytes(4).toString('hex'); // 8 characters
+    // Auto-generate password: [FirstName][YearOfBirth] (e.g. Pooja1995)
+    let passwordYear = new Date().getFullYear().toString();
+    if (dob) {
+      passwordYear = new Date(dob).getFullYear().toString();
+    }
+    const rawPassword = `${nameParts[0]}${passwordYear}`;
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(rawPassword, salt);
+
+    // Calculate Salary Components
+    const baseSalary = Number(monthWage) || 50000;
+    const basic = baseSalary * 0.50;
+    const hra = baseSalary * 0.20;
+    const allowances = baseSalary * 0.20;
+    const pf = baseSalary * 0.10;
 
     const user = new User({
       email,
@@ -102,7 +112,15 @@ router.post('/employees', authMiddleware, async (req, res) => {
       position,
       login_id,
       joining_date: actualJoiningDate,
-      month_wage: Number(monthWage) || 50000,
+      dob: dob ? new Date(dob) : null,
+      gender: gender || '',
+      profile_picture: profilePicture || '',
+      resume_url: resumeUrl || '',
+      month_wage: baseSalary,
+      basic_salary: basic,
+      hra: hra,
+      allowances: allowances,
+      pf: pf,
       working_days: Number(workingDays) || 5,
       break_time: Number(breakTime) || 1
     });
@@ -165,8 +183,33 @@ router.post('/employees', authMiddleware, async (req, res) => {
                     </div>
                   </div>
                   
+                  <!-- Salary Information -->
+                  <div style="background-color: #ffffff; border: 1px solid #e5e7eb; border-left: 4px solid #10B981; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #111827; font-size: 16px;">Salary Breakdown (Monthly)</h3>
+                    <table width="100%" cellpadding="5" cellspacing="0" style="font-size: 14px; color: #4b5563;">
+                      <tr><td style="border-bottom: 1px solid #f3f4f6;"><strong>Gross Salary</strong></td><td align="right" style="border-bottom: 1px solid #f3f4f6;">₹${baseSalary.toLocaleString('en-IN')}</td></tr>
+                      <tr><td style="border-bottom: 1px solid #f3f4f6;">Basic (50%)</td><td align="right" style="border-bottom: 1px solid #f3f4f6;">₹${basic.toLocaleString('en-IN')}</td></tr>
+                      <tr><td style="border-bottom: 1px solid #f3f4f6;">HRA (20%)</td><td align="right" style="border-bottom: 1px solid #f3f4f6;">₹${hra.toLocaleString('en-IN')}</td></tr>
+                      <tr><td style="border-bottom: 1px solid #f3f4f6;">Allowances (20%)</td><td align="right" style="border-bottom: 1px solid #f3f4f6;">₹${allowances.toLocaleString('en-IN')}</td></tr>
+                      <tr><td>PF Deduction (10%)</td><td align="right">₹${pf.toLocaleString('en-IN')}</td></tr>
+                    </table>
+                  </div>
+                  
+                  <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 15px 20px; margin: 30px 0;">
+                    <h4 style="color: #92400e; margin-top: 0; margin-bottom: 10px; font-size: 15px;">⚠️ Important Next Steps</h4>
+                    <ul style="color: #b45309; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.5;">
+                      <li>Click the button below to log in immediately.</li>
+                      <li>Go to your <strong>Profile</strong> section.</li>
+                      <li><strong>Upload your Resume</strong>.</li>
+                      <li>Fill out your personal details, emergency contacts, and list your skills.</li>
+                    </ul>
+                    <div style="text-align: center; margin-top: 20px;">
+                      <a href="http://localhost:5173/login" style="background-color: #502D55; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block;">Access My Dashboard</a>
+                    </div>
+                  </div>
+                  
                   <p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin-bottom: 0; border-left: 4px solid #502D55; padding-left: 15px; background: #fdf8fa; padding: 10px 15px;">
-                    <strong>Security Notice:</strong> Please log in using these credentials immediately. We strongly recommend changing your password after your first login to ensure the security of your account.
+                    <strong>Security Notice:</strong> We strongly recommend changing your password after your first login to ensure the security of your account.
                   </p>
                 </td>
               </tr>
@@ -202,6 +245,45 @@ router.post('/employees', authMiddleware, async (req, res) => {
     res.status(201).json({ user: userObj, generatedPassword: rawPassword });
   } catch (error) {
     console.error('Create employee error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// PUT /api/data/employees/:id (Admin/HR only)
+router.put('/employees/:id', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'hr') {
+      return res.status(403).json({ message: 'Not authorized to update employees' });
+    }
+
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    // HR cannot edit admin or other HR
+    if (req.user.role === 'hr' && (user.role === 'admin' || user.role === 'hr') && req.user.userId !== id) {
+      return res.status(403).json({ message: 'HR cannot edit this profile' });
+    }
+
+    Object.assign(user, updateData);
+    
+    // Recalculate salary if monthWage is provided
+    if (updateData.month_wage) {
+      const baseSalary = Number(updateData.month_wage) || 50000;
+      user.basic_salary = baseSalary * 0.50;
+      user.hra = baseSalary * 0.20;
+      user.allowances = baseSalary * 0.20;
+      user.pf = baseSalary * 0.10;
+    }
+
+    await user.save();
+    res.json(user);
+  } catch (error) {
+    console.error('Update employee error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

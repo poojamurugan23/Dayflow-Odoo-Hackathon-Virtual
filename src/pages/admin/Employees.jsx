@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { DEPARTMENTS, formatDate } from '../../lib/mockData';
-import { Search, Plus, LayoutGrid, List, Eye, Edit3, X, Loader2, ChevronDown, ChevronUp, Mail, Phone, Briefcase } from 'lucide-react';
+import { Search, Plus, LayoutGrid, List, Eye, Edit3, X, Loader2, ChevronDown, ChevronUp, Mail, Phone, Briefcase, FileText, Download } from 'lucide-react';
 import { EmployeeProfileModal } from '../../components/EmployeeProfileModal';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 /* ── Salary auto-calc helper ──────────────────────────────── */
 function calcSalary(monthWage) {
@@ -115,6 +118,7 @@ export function AdminEmployees() {
 
   // Real data state
   const [employees, setEmployees] = useState([]);
+  const [hrs, setHrs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
@@ -132,9 +136,9 @@ export function AdminEmployees() {
       });
       if (response.ok) {
         const data = await response.json();
-        const filteredData = data.filter(emp => emp.role !== 'hr');
-        const mapped = filteredData.map(emp => ({
-          ...emp, // Spread all fields including new schema fields
+        
+        const mapped = data.map(emp => ({
+          ...emp,
           id: emp._id,
           employeeId: emp.login_id,
           name: emp.name,
@@ -146,9 +150,12 @@ export function AdminEmployees() {
           manager: 'HR Department',
           status: emp.status || 'Active',
           joiningDate: emp.joining_date || new Date(),
-          avatar: emp.name ? emp.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : 'EM'
+          avatar: emp.name ? emp.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : 'EM',
+          profile_picture: emp.profile_picture || null
         }));
-        setEmployees(mapped);
+
+        setEmployees(mapped.filter(e => e.role === 'employee'));
+        setHrs(mapped.filter(e => e.role === 'hr'));
       }
     } catch (error) {
       console.error('Failed to fetch employees:', error);
@@ -183,7 +190,11 @@ export function AdminEmployees() {
           position: form.position.value,
           companyName: adminUser?.company_name || 'Odoo India',
           joiningDate: form.joiningDate.value,
-          monthWage: Number(monthWage) || 0
+          monthWage: Number(monthWage) || 0,
+          dob: form.dob.value,
+          gender: form.gender.value,
+          profilePicture: form.profilePicture.value,
+          resumeUrl: form.resumeUrl.value
         })
       });
 
@@ -208,15 +219,96 @@ export function AdminEmployees() {
     }
   };
 
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Employees List", 14, 15);
+    const tableData = employees.map(e => [e.employeeId, e.name, e.email, e.department, e.position, e.status]);
+    doc.autoTable({
+      head: [['ID', 'Name', 'Email', 'Department', 'Position', 'Status']],
+      body: tableData,
+      startY: 20,
+    });
+    doc.save("employees_list.pdf");
+    toast('Exported to PDF');
+  };
+
+  const exportExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(employees.map(e => ({
+      ID: e.employeeId,
+      Name: e.name,
+      Email: e.email,
+      Phone: e.phone,
+      Department: e.department,
+      Position: e.position,
+      Status: e.status
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Employees");
+    XLSX.writeFile(wb, "employees_list.xlsx");
+    toast('Exported to Excel');
+  };
+
   const toast = (msg) => { setShowToast(msg); setTimeout(() => setShowToast(null), 3000); };
 
-  const filtered = employees.filter(emp => {
+  const filteredEmployees = employees.filter(emp => {
     const matchesSearch = emp.name.toLowerCase().includes(search.toLowerCase()) || emp.employeeId.toLowerCase().includes(search.toLowerCase());
     const matchesDept = deptFilter === 'all' || emp.department === deptFilter;
     return matchesSearch && matchesDept;
   });
 
+  const filteredHrs = hrs.filter(hr => {
+    const matchesSearch = hr.name.toLowerCase().includes(search.toLowerCase()) || hr.employeeId.toLowerCase().includes(search.toLowerCase());
+    return matchesSearch;
+  });
+
   if (loading) return <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin text-[#502D55]" size={32} /></div>;
+
+  const renderProfileCard = (emp, isHr = false) => (
+    <div key={emp.id} onClick={() => setSelectedEmployee(emp)}
+      className="group bg-white rounded-xl border border-gray-200 p-4 hover:border-[#502D55]/40 hover:shadow-md transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4"
+    >
+      <div className="flex items-center gap-4 min-w-0">
+        <div className="relative shrink-0">
+          {emp.profile_picture ? (
+            <img src={emp.profile_picture} alt={emp.name} className="h-12 w-12 rounded-full object-cover shadow-sm border border-gray-100" />
+          ) : (
+            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#502D55] to-[#935073] text-white flex items-center justify-center text-sm font-bold shadow-sm">
+              {emp.avatar}
+            </div>
+          )}
+          <div className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-white bg-white">
+            <span className={`flex h-2.5 w-2.5 rounded-full ${emp.status === 'Active' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+          </div>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-[#171923] truncate">{emp.name}</h3>
+            <span className="inline-flex items-center rounded-md bg-[#502D55]/5 px-1.5 py-0.5 text-[10px] font-mono font-bold text-[#502D55] shrink-0">
+              {emp.employeeId}
+            </span>
+            {isHr && <span className="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700 shrink-0">HR</span>}
+          </div>
+          <p className="text-xs text-gray-500 truncate mt-0.5">{emp.email} • {emp.phone}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-6 text-sm md:w-1/3 justify-between md:justify-end shrink-0 pl-16 md:pl-0">
+        <div className="text-left md:text-right flex-1 min-w-0">
+          <p className="text-xs font-semibold text-[#171923] truncate">{emp.position}</p>
+          <p className="text-[11px] text-gray-500 truncate flex items-center md:justify-end gap-1 mt-0.5">
+            <Briefcase size={10} /> {emp.department}
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-1">
+            <button onClick={(e) => { e.stopPropagation(); setSelectedEmployee(emp); }} className="p-2 rounded-lg hover:bg-[#502D55]/5 text-gray-400 hover:text-[#502D55] transition-colors" title="View Profile"><Eye size={18} /></button>
+            {!isHr && <button onClick={(e) => { e.stopPropagation(); setSelectedEmployee(emp); }} className="p-2 rounded-lg hover:bg-[#502D55]/5 text-gray-400 hover:text-[#502D55] transition-colors" title="Edit"><Edit3 size={18} /></button>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -229,11 +321,19 @@ export function AdminEmployees() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="font-serif text-2xl lg:text-3xl font-bold text-[#171923]">Employees</h1>
-          <p className="mt-1 text-sm text-[#6B7280]">{employees.length} employees in your organization.</p>
+          <p className="mt-1 text-sm text-[#6B7280]">{employees.length} employees and {hrs.length} HR members in your organization.</p>
         </div>
-        <button onClick={() => { setShowAddModal(true); setMonthWage(''); }} className="inline-flex items-center gap-2 rounded-lg bg-[#502D55] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#5a3256] transition-colors">
-          <Plus size={16} /> Add Employee
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportPDF} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
+            <FileText size={16} /> PDF
+          </button>
+          <button onClick={exportExcel} className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
+            <Download size={16} /> Excel
+          </button>
+          <button onClick={() => { setShowAddModal(true); setMonthWage(''); }} className="inline-flex items-center gap-2 rounded-lg bg-[#502D55] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#5a3256] transition-colors shadow-sm">
+            <Plus size={16} /> Add Employee
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -248,145 +348,47 @@ export function AdminEmployees() {
             <option value="all">All Departments</option>
             {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-            <button onClick={() => setView('table')} className={`p-2.5 transition-colors ${view === 'table' ? 'bg-gray-100 text-[#171923]' : 'bg-white text-gray-400 hover:text-gray-700'}`}><List size={18} /></button>
-            <button onClick={() => setView('grid')} className={`p-2.5 transition-colors ${view === 'grid' ? 'bg-gray-100 text-[#171923]' : 'bg-white text-gray-400 hover:text-gray-700'}`}><LayoutGrid size={18} /></button>
-          </div>
         </div>
       </div>
 
       {/* Stacked View */}
-      {view === 'table' ? (
-        <div className="space-y-3">
-          {filtered.map(emp => (
-            <div key={emp.id} onClick={() => setSelectedEmployee(emp)}
-              className="group bg-white rounded-xl border border-gray-200 p-4 hover:border-[#502D55]/40 hover:shadow-md transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4"
-            >
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="relative shrink-0">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#502D55] to-[#935073] text-white flex items-center justify-center text-sm font-bold shadow-sm">
-                    {emp.avatar}
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-white bg-white">
-                    <span className={`flex h-2.5 w-2.5 rounded-full ${emp.status === 'Active' ? 'bg-green-500' : 'bg-yellow-500'}`} />
-                  </div>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-[#171923] truncate">{emp.name}</h3>
-                    <span className="inline-flex items-center rounded-md bg-[#502D55]/5 px-1.5 py-0.5 text-[10px] font-mono font-bold text-[#502D55] shrink-0">
-                      {emp.employeeId}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 truncate mt-0.5">{emp.email} • {emp.phone}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-6 text-sm md:w-1/3 justify-between md:justify-end shrink-0 pl-16 md:pl-0">
-                <div className="text-left md:text-right flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-[#171923] truncate">{emp.position}</p>
-                  <p className="text-[11px] text-gray-500 truncate flex items-center md:justify-end gap-1 mt-0.5">
-                    <Briefcase size={10} /> {emp.department}
-                  </p>
-                </div>
-                
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="text-right hidden sm:block">
-                    <p className="text-[10px] text-gray-400 uppercase font-semibold">Joined</p>
-                    <p className="text-xs font-medium text-gray-700">{formatDate(emp.joiningDate)}</p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button onClick={(e) => { e.stopPropagation(); setSelectedEmployee(emp); }} className="p-2 rounded-lg hover:bg-[#502D55]/5 text-gray-400 hover:text-[#502D55] transition-colors" title="View Profile"><Eye size={18} /></button>
-                    <button onClick={(e) => { e.stopPropagation(); toast(`Editing ${emp.name}'s profile`); }} className="p-2 rounded-lg hover:bg-[#502D55]/5 text-gray-400 hover:text-[#502D55] transition-colors" title="Edit"><Edit3 size={18} /></button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-          {filtered.length === 0 && (
-            <div className="p-12 text-center bg-white rounded-xl border border-gray-200"><p className="text-sm text-[#6B7280]">No employees match your filters.</p></div>
-          )}
+      <div className="space-y-8">
+        {/* Employees Section */}
+        <div>
+          <h2 className="text-lg font-bold text-[#171923] mb-4 border-b pb-2">Employee Directory</h2>
+          <div className="space-y-3">
+            {filteredEmployees.map(emp => renderProfileCard(emp, false))}
+            {filteredEmployees.length === 0 && (
+              <div className="p-12 text-center bg-white rounded-xl border border-gray-200"><p className="text-sm text-[#6B7280]">No employees match your filters.</p></div>
+            )}
+          </div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map(emp => (
-            <div key={emp.id} onClick={() => setSelectedEmployee(emp)}
-              className="bg-white rounded-xl border border-gray-200 p-5 relative cursor-pointer hover:border-[#502D55]/40 hover:shadow-md transition-all group flex flex-col h-full"
-            >
-              {/* Header: Avatar + Details */}
-              <div className="flex items-start gap-4 mb-4">
-                <div className="relative">
-                  <div className="h-14 w-14 rounded-full bg-gradient-to-br from-[#502D55] to-[#935073] text-white flex items-center justify-center text-lg font-bold shadow-sm group-hover:scale-105 transition-transform shrink-0">
-                    {emp.avatar}
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 rounded-full border-2 border-white bg-white">
-                    <span className={`flex items-center justify-center h-3 w-3 rounded-full ring-2 ring-white shadow-sm ${
-                      emp.status === 'Active' ? 'bg-green-500' : 'bg-yellow-500'
-                    }`} />
-                  </div>
-                </div>
-                
-                <div className="flex-1 min-w-0 pt-1 text-left">
-                  <h3 className="text-sm font-bold text-[#171923] truncate leading-tight">{emp.name}</h3>
-                  <p className="text-xs text-[#502D55] font-semibold mt-1 truncate">{emp.position}</p>
-                  <p className="text-[11px] text-gray-500 font-medium truncate flex items-center gap-1 mt-0.5">
-                    <Briefcase size={10} /> {emp.department}
-                  </p>
-                </div>
-              </div>
 
-              {/* Body: Contact Info */}
-              <div className="space-y-2 mb-4 w-full">
-                <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                  <Mail size={12} className="text-gray-400 shrink-0" />
-                  <span className="truncate">{emp.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                  <Phone size={12} className="text-gray-400 shrink-0" />
-                  <span className="truncate">{emp.phone}</span>
-                </div>
-              </div>
-
-              {/* Footer: Skills & ID */}
-              <div className="mt-auto pt-4 border-t border-gray-100 flex flex-wrap items-end justify-between gap-2 w-full">
-                <div className="flex-1 min-w-0">
-                  {emp.skills && emp.skills.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {emp.skills.slice(0, 3).map(skill => (
-                        <span key={skill} className="px-1.5 py-0.5 rounded text-[9px] bg-gray-50 border border-gray-200 text-gray-600 font-medium whitespace-nowrap">
-                          {skill}
-                        </span>
-                      ))}
-                      {emp.skills.length > 3 && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-gray-50 border border-gray-200 text-gray-400 font-medium">
-                          +{emp.skills.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-[10px] text-gray-400 italic">No skills listed</span>
-                  )}
-                </div>
-                <span className="inline-flex items-center rounded-md bg-[#502D55]/5 px-1.5 py-0.5 text-[9px] font-mono font-bold text-[#502D55] whitespace-nowrap shrink-0">
-                  {emp.employeeId}
-                </span>
-              </div>
-            </div>
-          ))}
+        {/* HR Section */}
+        <div>
+          <h2 className="text-lg font-bold text-[#171923] mb-4 border-b pb-2 mt-8">HR Team</h2>
+          <div className="space-y-3">
+            {filteredHrs.map(hr => renderProfileCard(hr, true))}
+            {filteredHrs.length === 0 && (
+              <div className="p-12 text-center bg-white rounded-xl border border-gray-200"><p className="text-sm text-[#6B7280]">No HR profiles found.</p></div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
-      {/* Comprehensive View-Only Employee Profile Modal */}
+      {/* Comprehensive View/Edit Employee Profile Modal */}
       {selectedEmployee && (
         <EmployeeProfileModal 
           employee={selectedEmployee} 
           onClose={() => setSelectedEmployee(null)} 
+          isHrView={selectedEmployee.role === 'hr'}
+          refreshList={fetchEmployees}
         />
       )}
 
       {/* Add Employee Modal with Salary Auto-Calc */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { if (!addedEmployeeData) { setShowAddModal(false); setMonthWage(''); } }} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
@@ -403,7 +405,7 @@ export function AdminEmployees() {
                   <svg className="h-7 w-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
                 </div>
                 <h3 className="text-xl font-bold text-[#171923] mb-2">Employee Created Successfully!</h3>
-                <p className="text-sm text-gray-500 mb-6">Share these credentials securely with the employee.</p>
+                <p className="text-sm text-gray-500 mb-6">A welcome email with login details has been sent to the employee.</p>
 
                 <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-4 space-y-3 text-left">
                   <div className="flex justify-between items-center pb-3 border-b border-gray-200">
@@ -424,10 +426,6 @@ export function AdminEmployees() {
                       <div className="flex justify-between"><span className="text-gray-500">Yearly</span><span className="font-bold text-[#502D55]">₹{addedEmployeeData.salary.yearlyWage.toLocaleString('en-IN')}</span></div>
                       <div className="flex justify-between"><span className="text-gray-500">Basic</span><span className="font-mono">₹{fmt(addedEmployeeData.salary.basic)}</span></div>
                       <div className="flex justify-between"><span className="text-gray-500">HRA</span><span className="font-mono">₹{fmt(addedEmployeeData.salary.hra)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Std Allowance</span><span className="font-mono">₹{fmt(addedEmployeeData.salary.std)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Perf Bonus</span><span className="font-mono">₹{fmt(addedEmployeeData.salary.perf)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">LTA</span><span className="font-mono">₹{fmt(addedEmployeeData.salary.lta)}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Fixed Allow.</span><span className="font-mono">₹{fmt(addedEmployeeData.salary.fixed)}</span></div>
                     </div>
                   </div>
                 )}
@@ -453,6 +451,19 @@ export function AdminEmployees() {
                     <div>
                       <label className="block text-sm font-semibold text-[#171923] mb-1.5">Phone Number</label>
                       <input name="phone" type="tel" placeholder="+91 98765 43210" className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all placeholder:text-gray-400" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Date of Birth <span className="text-red-500">*</span></label>
+                      <input name="dob" type="date" required className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all text-gray-700" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Gender <span className="text-red-500">*</span></label>
+                      <select name="gender" required className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all">
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -480,10 +491,10 @@ export function AdminEmployees() {
 
                 {/* Section 3: Compensation & Schedule */}
                 <div>
-                  <h4 className="text-xs font-bold text-[#502D55] uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">Compensation & Schedule</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <h4 className="text-xs font-bold text-[#502D55] uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">Compensation</h4>
+                  <div className="grid grid-cols-1 gap-5">
                     <div className="md:col-span-1">
-                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Monthly Wage (₹)</label>
+                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Monthly Base Salary (₹) <span className="text-red-500">*</span></label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-mono">₹</span>
                         <input
@@ -492,27 +503,10 @@ export function AdminEmployees() {
                           onChange={e => setMonthWage(e.target.value)}
                           placeholder="50000"
                           min="0"
+                          required
                           className="block w-full pl-8 pr-4 py-2.5 rounded-lg border border-gray-200 bg-white text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all font-mono placeholder:text-gray-400"
                         />
                       </div>
-                    </div>
-                    <div className="md:col-span-1">
-                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Working Days/Wk</label>
-                      <input
-                        type="number"
-                        defaultValue={5}
-                        min="1" max="7"
-                        className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all font-mono"
-                      />
-                    </div>
-                    <div className="md:col-span-1">
-                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Break Time (hrs)</label>
-                      <input
-                        type="number"
-                        defaultValue={1}
-                        min="0" max="24"
-                        className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all font-mono"
-                      />
                     </div>
                   </div>
                 </div>
@@ -520,6 +514,22 @@ export function AdminEmployees() {
                 {/* Live Salary Preview — appears as soon as wage is typed */}
                 <div className="mt-4">
                   <SalaryPreview monthWage={monthWage} />
+                </div>
+
+                {/* Section 4: Attachments */}
+                <div>
+                  <h4 className="text-xs font-bold text-[#502D55] uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">Attachments & Images</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Profile Picture URL</label>
+                      <input name="profilePicture" type="url" placeholder="https://example.com/photo.jpg" className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all placeholder:text-gray-400" />
+                      <p className="text-[10px] text-gray-500 mt-1">Provide a URL for the high quality profile picture.</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Resume URL (Optional)</label>
+                      <input name="resumeUrl" type="url" placeholder="https://drive.google.com/..." className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all placeholder:text-gray-400" />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-6 mt-4 border-t border-gray-100">
