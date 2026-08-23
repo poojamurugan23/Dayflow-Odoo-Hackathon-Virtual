@@ -541,7 +541,7 @@ router.post('/timeoff', authMiddleware, async (req, res) => {
 // PATCH /api/data/timeoff/:id/status (Admin Approve/Reject leave)
 router.patch('/timeoff/:id/status', authMiddleware, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'hr') {
       return res.status(403).json({ message: 'Only admins can review leaves' });
     }
 
@@ -577,7 +577,7 @@ router.patch('/timeoff/:id/status', authMiddleware, async (req, res) => {
 // DELETE /api/data/timeoff/:id (Admin remove time off)
 router.delete('/timeoff/:id', authMiddleware, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'hr') {
       return res.status(403).json({ message: 'Only admins can remove time off records' });
     }
 
@@ -715,7 +715,7 @@ router.get('/payroll', authMiddleware, async (req, res) => {
 // POST /api/data/payroll (Admin: create payroll record)
 router.post('/payroll', authMiddleware, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'hr') {
       return res.status(403).json({ message: 'Only admins can create payroll' });
     }
 
@@ -962,7 +962,7 @@ router.post('/complaints', authMiddleware, async (req, res) => {
 // PATCH /api/data/complaints/:id/status
 router.patch('/complaints/:id/status', authMiddleware, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'hr') {
       return res.status(403).json({ message: 'Only admin can resolve complaints' });
     }
     const { status, admin_notes } = req.body;
@@ -1013,7 +1013,7 @@ router.get('/meetings', authMiddleware, async (req, res) => {
 // POST /api/data/meetings
 router.post('/meetings', authMiddleware, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'hr') {
       return res.status(403).json({ message: 'Only admin can arrange meetings' });
     }
     const { title, description, date, time, participants, link } = req.body;
@@ -1078,7 +1078,7 @@ router.patch('/meetings/:id/rsvp', authMiddleware, async (req, res) => {
 // DELETE /api/data/employees/:id
 router.delete('/employees/:id', authMiddleware, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'hr') {
       return res.status(403).json({ message: 'Access denied' });
     }
     const user = await User.findByIdAndDelete(req.params.id);

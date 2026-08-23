@@ -191,7 +191,6 @@ export function SuperAdminMeetings() {
                                 src={user.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=random`} 
                                 alt={user.name || 'User'} 
                                 className="w-5 h-5 rounded-full object-cover"
-                                crossOrigin="anonymous"
                               />
                               <span className="text-[10px] font-bold text-gray-700">{user.name ? user.name.split(' ')[0] : 'Unknown'}</span>
                             </div>
@@ -212,7 +211,6 @@ export function SuperAdminMeetings() {
                                 src={user.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=random`} 
                                 alt={user.name || 'User'} 
                                 className="w-5 h-5 rounded-full object-cover"
-                                crossOrigin="anonymous"
                               />
                               <span className="text-[10px] font-bold text-gray-700">{user.name ? user.name.split(' ')[0] : 'Unknown'}</span>
                             </div>
