@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DEPARTMENTS, formatDate } from '../../lib/mockData';
 import { Search, Plus, LayoutGrid, List, Eye, Edit3, X, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { EmployeeProfileModal } from '../../components/EmployeeProfileModal';
 
 /* ── Salary auto-calc helper ──────────────────────────────── */
 function calcSalary(monthWage) {
@@ -320,47 +321,12 @@ export function AdminEmployees() {
         </div>
       )}
 
-      {/* View-Only Employee Profile Modal */}
+      {/* Comprehensive View-Only Employee Profile Modal */}
       {selectedEmployee && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedEmployee(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100">
-            <div className="h-28 bg-gradient-to-r from-[#502D55] to-[#935073] relative">
-              <button onClick={() => setSelectedEmployee(null)} className="absolute top-4 right-4 h-8 w-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-colors">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="px-6 pb-6 pt-0 relative">
-              <div className="flex items-end gap-4 -mt-12 mb-4">
-                <div className="h-20 w-20 rounded-2xl bg-white border-4 border-white shadow-md flex items-center justify-center text-[#502D55] text-2xl font-bold bg-gradient-to-br from-purple-50 to-pink-50">{selectedEmployee.avatar}</div>
-                <div className="pb-1">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold text-[#171923] font-serif">{selectedEmployee.name}</h2>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-green-700 uppercase">Active</span>
-                  </div>
-                  <p className="text-xs text-[#502D55] font-semibold">{selectedEmployee.position}</p>
-                </div>
-              </div>
-              <div className="space-y-4 mt-6">
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-3 text-sm">
-                  {[['Employee ID', selectedEmployee.employeeId, true], ['Department', selectedEmployee.department, false], ['Email Address', selectedEmployee.email, false], ['Phone Number', selectedEmployee.phone, false], ['Joining Date', formatDate(selectedEmployee.joiningDate), false]].map(([label, val, mono]) => (
-                    <div key={label} className="flex items-center justify-between pb-2 border-b border-gray-200/60 last:border-0 last:pb-0">
-                      <span className="text-xs text-gray-500 font-medium">{label}</span>
-                      <span className={`${mono ? 'font-mono font-bold text-[#502D55]' : 'text-gray-800 font-medium'}`}>{val}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center justify-between px-2 text-xs text-gray-500">
-                  <span>Company: <strong className="text-gray-700">{selectedEmployee.companyName}</strong></span>
-                  <span>Manager: <strong className="text-gray-700">{selectedEmployee.manager}</strong></span>
-                </div>
-              </div>
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <button onClick={() => setSelectedEmployee(null)} className="w-full rounded-xl bg-[#502D55] py-2.5 text-sm font-semibold text-white hover:bg-[#5a3256] transition-colors">Close</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <EmployeeProfileModal 
+          employee={selectedEmployee} 
+          onClose={() => setSelectedEmployee(null)} 
+        />
       )}
 
       {/* Add Employee Modal with Salary Auto-Calc */}

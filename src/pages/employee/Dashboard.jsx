@@ -4,6 +4,7 @@ import {
   CheckCircle, LogIn, LogOut as LogOutIcon, Plane, X,
   Mail, Phone, Building2, Briefcase, Calendar, Search, Plus, Loader2
 } from 'lucide-react';
+import { EmployeeProfileModal } from '../../components/EmployeeProfileModal';
 import { formatDate } from '../../lib/mockData';
 
 /* ── Status helpers ─────────────────────────────────────── */
@@ -338,73 +339,11 @@ export function EmployeeDashboard() {
 
       {/* ── View-Only Employee Profile Modal ─────────────── */}
       {selectedEmployee && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedEmployee(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100">
-            {/* Purple banner */}
-            <div className="h-24 bg-gradient-to-r from-[#502D55] to-[#935073] relative">
-              <span className="absolute top-3 left-3 bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">View Only</span>
-              <button
-                onClick={() => setSelectedEmployee(null)}
-                className="absolute top-3 right-3 h-8 w-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Avatar overlap */}
-            <div className="px-6 pb-6 pt-0">
-              <div className="flex items-end gap-4 -mt-10 mb-5">
-                <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-[#502D55] to-[#935073] text-white flex items-center justify-center text-2xl font-bold border-4 border-white shadow-md">
-                  {selectedEmployee.avatar}
-                </div>
-                <div className="pb-1">
-                  <h2 className="text-xl font-bold text-[#171923] font-serif leading-tight">{selectedEmployee.name}</h2>
-                  <p className="text-xs text-[#935073] font-semibold mt-0.5">{selectedEmployee.position}</p>
-                </div>
-              </div>
-
-              {/* Status dot legend for this employee */}
-              <div className="flex items-center gap-2 mb-4">
-                <StatusDot status={selectedEmployee.attendanceStatus} />
-                <span className="text-xs text-gray-500">{STATUS_CONFIG[selectedEmployee.attendanceStatus]?.label}</span>
-              </div>
-
-              {/* Info rows */}
-              <div className="space-y-2 text-sm">
-                {[
-                  { icon: <Building2 size={14} />, label: 'Department', val: selectedEmployee.department },
-                  { icon: <Briefcase size={14} />, label: 'Position', val: selectedEmployee.position },
-                  { icon: <Mail size={14} />, label: 'Email', val: selectedEmployee.email },
-                  { icon: <Phone size={14} />, label: 'Phone', val: selectedEmployee.phone },
-                  { icon: <Calendar size={14} />, label: 'Joined', val: selectedEmployee.joiningDate ? formatDate(selectedEmployee.joiningDate) : '—' },
-                ].map(row => (
-                  <div key={row.label} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                    <span className="text-xs text-gray-500 flex items-center gap-1.5 font-medium">
-                      <span className="text-gray-400">{row.icon}</span>{row.label}
-                    </span>
-                    <span className="font-semibold text-[#171923] text-xs text-right max-w-[60%] truncate">{row.val || '—'}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Employee ID chip */}
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Employee ID</span>
-                <span className="font-mono font-bold text-[#502D55] text-xs bg-[#502D55]/5 px-3 py-1 rounded-full border border-[#502D55]/20">
-                  {selectedEmployee.employeeId}
-                </span>
-              </div>
-
-              <button
-                onClick={() => setSelectedEmployee(null)}
-                className="mt-5 w-full rounded-xl bg-[#502D55] py-2.5 text-sm font-bold text-white hover:bg-[#3e2342] transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+        <EmployeeProfileModal 
+          employee={selectedEmployee} 
+          onClose={() => setSelectedEmployee(null)} 
+          isAdmin={false} 
+        />
       )}
     </div>
   );

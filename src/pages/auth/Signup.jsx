@@ -82,7 +82,7 @@ export function Signup() {
             <img src="/odoo_logo.png" alt="Odoo Logo" className="h-10 w-auto object-contain" />
           </div>
 
-          <h1 className="mb-6 font-serif text-5xl font-bold leading-tight text-[#F8F4E9]">
+          <h1 className="mb-6 font-serif text-5xl font-bold leading-tight text-white">
             Transform Your<br />HR Experience.
           </h1>
           <p className="text-xl font-medium text-white/80 max-w-md leading-relaxed">
@@ -100,7 +100,7 @@ export function Signup() {
       </div>
 
       {/* Right Side - Form */}
-      <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-20 overflow-y-auto bg-[#F8F4E9] shadow-2xl z-10">
+      <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-20 overflow-y-auto bg-white shadow-2xl z-10">
         <div className="mx-auto w-full max-w-md">
           <div className="mb-10">
             <h2 className="font-serif text-4xl font-bold text-[#502D55] tracking-tight">Create Account</h2>
