@@ -7,8 +7,7 @@
     "build": "vite build",
     "build:railway": "npm install && vite build && cd server && npm install",
     "start": "cd server && node server.js",
-    "preview": "vite preview",
-    "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
