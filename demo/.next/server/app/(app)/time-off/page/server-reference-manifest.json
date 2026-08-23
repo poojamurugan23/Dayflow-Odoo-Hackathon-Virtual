@@ -1,0 +1,140 @@
+{
+  "node": {
+    "0043c90ad416986d63fb4223a86d2b5bf7914b37e6": {
+      "workers": {
+        "app/(app)/time-off/page": {
+          "moduleId": "4647",
+          "async": false,
+          "exportedName": "markAllNotificationsRead",
+          "filename": "actions/notifications.ts"
+        }
+      },
+      "layer": {
+        "app/(app)/time-off/page": "action-browser"
+      },
+      "exportedName": "markAllNotificationsRead",
+      "filename": "actions/notifications.ts"
+    },
+    "40c2cde60ecdb9c5ba22c060667d9696735c0ac7a5": {
+      "workers": {
+        "app/(app)/time-off/page": {
+          "moduleId": "4647",
+          "async": false,
+          "exportedName": "markNotificationRead",
+          "filename": "actions/notifications.ts"
+        }
+      },
+      "layer": {
+        "app/(app)/time-off/page": "action-browser"
+      },
+      "exportedName": "markNotificationRead",
+      "filename": "actions/notifications.ts"
+    },
+    "00a8a1119c26d1f19bf8ad2454b51c3e2f1438d084": {
+      "workers": {
+        "app/(app)/time-off/page": {
+          "moduleId": "4647",
+          "async": false,
+          "exportedName": "checkIn",
+          "filename": "actions/attendance.ts"
+        }
+      },
+      "layer": {
+        "app/(app)/time-off/page": "action-browser"
+      },
+      "exportedName": "checkIn",
+      "filename": "actions/attendance.ts"
+    },
+    "001392959bb814982c6550298db71478dfd5d3c8cc": {
+      "workers": {
+        "app/(app)/time-off/page": {
+          "moduleId": "4647",
+          "async": false,
+          "exportedName": "checkOut",
+          "filename": "actions/attendance.ts"
+        }
+      },
+      "layer": {
+        "app/(app)/time-off/page": "action-browser"
+      },
+      "exportedName": "checkOut",
+      "filename": "actions/attendance.ts"
+    },
+    "001890ce0e67306700298bf9227c84fca245daa9b0": {
+      "workers": {
+        "app/(app)/time-off/page": {
+          "moduleId": "4647",
+          "async": false,
+          "exportedName": "signOut",
+          "filename": "actions/auth.ts"
+        }
+      },
+      "layer": {
+        "app/(app)/time-off/page": "action-browser"
+      },
+      "exportedName": "signOut",
+      "filename": "actions/auth.ts"
+    },
+    "40ad35abf7248e069844c5d3ce8c11343803fe30a2": {
+      "workers": {
+        "app/(app)/time-off/page": {
+          "moduleId": "4647",
+          "async": false,
+          "exportedName": "getAttachmentUrl",
+          "filename": "actions/leave.ts"
+        }
+      },
+      "layer": {
+        "app/(app)/time-off/page": "action-browser"
+      },
+      "exportedName": "getAttachmentUrl",
+      "filename": "actions/leave.ts"
+    },
+    "604ee2367018f1c18865547be553df756e016233ed": {
+      "workers": {
+        "app/(app)/time-off/page": {
+          "moduleId": "4647",
+          "async": false,
+          "exportedName": "decideLeave",
+          "filename": "actions/leave.ts"
+        }
+      },
+      "layer": {
+        "app/(app)/time-off/page": "action-browser"
+      },
+      "exportedName": "decideLeave",
+      "filename": "actions/leave.ts"
+    },
+    "602772708509b00d87b3926f2472218b15068ba303": {
+      "workers": {
+        "app/(app)/time-off/page": {
+          "moduleId": "4647",
+          "async": false,
+          "exportedName": "checkTeamConflicts",
+          "filename": "actions/leave.ts"
+        }
+      },
+      "layer": {
+        "app/(app)/time-off/page": "action-browser"
+      },
+      "exportedName": "checkTeamConflicts",
+      "filename": "actions/leave.ts"
+    },
+    "608788dc6a15753084d68e3f06e3d84160612d5f94": {
+      "workers": {
+        "app/(app)/time-off/page": {
+          "moduleId": "4647",
+          "async": false,
+          "exportedName": "requestLeave",
+          "filename": "actions/leave.ts"
+        }
+      },
+      "layer": {
+        "app/(app)/time-off/page": "action-browser"
+      },
+      "exportedName": "requestLeave",
+      "filename": "actions/leave.ts"
+    }
+  },
+  "edge": {}
+}

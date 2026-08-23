@@ -22,17 +22,26 @@ router.post('/signup', async (req, res) => {
     // 2022 = Year of Joining
     // 0001 = Serial Number of Joining for that Year
 
-    // 1. Company prefix is always "OI" (Odoo India)
-    const companyPrefix = 'OI';
+    // 1. Company Initials (e.g., Odoo India -> OI)
+    const actualCompanyName = companyName || 'Odoo India';
+    const compWords = actualCompanyName.trim().split(/\s+/);
+    let compCode = "OI";
+    if (compWords.length >= 2) {
+      compCode = (compWords[0].charAt(0) + compWords[1].charAt(0)).toUpperCase();
+    } else if (compWords.length === 1) {
+      compCode = compWords[0].substring(0, 2).toUpperCase();
+    }
     
     // 2. Name code: first 2 letters of first name + first 2 letters of last name
     let nameCode = 'XXXX';
     if (name) {
-      const parts = name.trim().split(/\s+/);
-      if (parts.length >= 2) {
-        nameCode = (parts[0].substring(0, 2) + parts[parts.length - 1].substring(0, 2)).toUpperCase();
+      const nameParts = name.trim().split(/\s+/);
+      if (nameParts.length >= 2) {
+        const firstPart = nameParts[0].substring(0, 2).toUpperCase().padEnd(2, 'X');
+        const lastPart = nameParts[nameParts.length - 1].substring(0, 2).toUpperCase().padEnd(2, 'X');
+        nameCode = `${firstPart}${lastPart}`;
       } else {
-        nameCode = parts[0].substring(0, 4).toUpperCase();
+        nameCode = nameParts[0].substring(0, 4).toUpperCase().padEnd(4, 'X');
       }
     }
     
@@ -43,11 +52,11 @@ router.post('/signup', async (req, res) => {
     const startOfYear = new Date(joiningYear, 0, 1);
     const endOfYear = new Date(joiningYear + 1, 0, 1);
     const countThisYear = await User.countDocuments({ 
-      createdAt: { $gte: startOfYear, $lt: endOfYear } 
+      joining_date: { $gte: startOfYear, $lt: endOfYear } 
     });
     const serial = (countThisYear + 1).toString().padStart(4, '0');
     
-    const login_id = `${companyPrefix}${nameCode}${joiningYear}${serial}`;
+    const login_id = `${compCode}${nameCode}${joiningYear}${serial}`;
 
     // Hash password
     const salt = await bcrypt.genSalt(10);

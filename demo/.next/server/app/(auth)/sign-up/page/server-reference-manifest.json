@@ -1,0 +1,20 @@
+{
+  "node": {
+    "60fae0c480381935422ad2bc4b3a8c374bac575134": {
+      "workers": {
+        "app/(auth)/sign-up/page": {
+          "moduleId": "65995",
+          "async": false,
+          "exportedName": "signUpCompany",
+          "filename": "actions/auth.ts"
+        }
+      },
+      "layer": {
+        "app/(auth)/sign-up/page": "action-browser"
+      },
+      "exportedName": "signUpCompany",
+      "filename": "actions/auth.ts"
+    }
+  },
+  "edge": {}
+}

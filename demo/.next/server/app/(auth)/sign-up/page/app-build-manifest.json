@@ -1,0 +1,21 @@
+{
+  "pages": {
+    "/(auth)/sign-up/page": [
+      "static/chunks/ff1a16fafef87110.js",
+      "static/chunks/7d5fd19a460be294.js",
+      "static/chunks/a973077d88cb7362.css",
+      "static/chunks/2a83a1ef8fd4fcac.css",
+      "static/chunks/d0cf0ba55b8c6482.js",
+      "static/chunks/0673e87f279f1e73.js",
+      "static/chunks/065173e66d104e07.js",
+      "static/chunks/da7760ef748edde4.js",
+      "static/chunks/50e4be39d57f9e9b.js",
+      "static/chunks/a1f22164edb62c9e.js",
+      "static/chunks/c29f8bc74d29faae.js",
+      "static/chunks/b13bb69e0304c3cb.js",
+      "static/chunks/522518d740397639.js",
+      "static/chunks/d6eecde874291762.js",
+      "static/chunks/turbopack-d59bfc012c7220d0.js"
+    ]
+  }
+}

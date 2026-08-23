@@ -31,6 +31,8 @@ router.get('/employees', authMiddleware, async (req, res) => {
   }
 });
 
+const nodemailer = require('nodemailer');
+
 // POST /api/data/employees (Admin only)
 router.post('/employees', authMiddleware, async (req, res) => {
   try {
@@ -38,40 +40,54 @@ router.post('/employees', authMiddleware, async (req, res) => {
       return res.status(403).json({ message: 'Only admins can create employees' });
     }
 
-    const { name, email, phone, department, position, companyName } = req.body;
+    const { name, email, phone, department, position, companyName, joiningDate, monthWage, workingDays, breakTime } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User with this email already exists' });
     }
 
-    // Generate Login ID: OI + [First2 of FirstName + First2 of LastName] + [Year] + [Serial]
-    // Example: OIJODO20220001
-    const companyPrefix = 'OI'; // Always "OI" for Odoo India
-    
-    let nameCode = 'XXXX';
-    if (name) {
-      const parts = name.trim().split(/\s+/);
-      if (parts.length >= 2) {
-        nameCode = (parts[0].substring(0, 2) + parts[parts.length - 1].substring(0, 2)).toUpperCase();
-      } else {
-        nameCode = parts[0].substring(0, 4).toUpperCase();
-      }
+    const actualCompanyName = companyName || 'Odoo India';
+    const actualJoiningDate = joiningDate ? new Date(joiningDate) : new Date();
+
+    // 1. Company Initials (e.g., Odoo India -> OI)
+    const compWords = actualCompanyName.trim().split(/\s+/);
+    let compCode = "OI";
+    if (compWords.length >= 2) {
+      compCode = (compWords[0].charAt(0) + compWords[1].charAt(0)).toUpperCase();
+    } else if (compWords.length === 1) {
+      compCode = compWords[0].substring(0, 2).toUpperCase();
     }
     
-    const joiningYear = new Date().getFullYear();
+    // 2. First two letters of first name and last name (e.g., John Doe -> JODO)
+    const nameParts = name.trim().split(/\s+/);
+    let nameCode = "";
+    if (nameParts.length >= 2) {
+      const firstPart = nameParts[0].substring(0, 2).toUpperCase().padEnd(2, 'X');
+      const lastPart = nameParts[nameParts.length - 1].substring(0, 2).toUpperCase().padEnd(2, 'X');
+      nameCode = `${firstPart}${lastPart}`;
+    } else if (nameParts.length === 1) {
+      nameCode = nameParts[0].substring(0, 4).toUpperCase().padEnd(4, 'X');
+    }
     
-    const startOfYear = new Date(joiningYear, 0, 1);
-    const endOfYear = new Date(joiningYear + 1, 0, 1);
+    // 3. Year of joining
+    const yyyy = actualJoiningDate.getFullYear();
+    const dateCode = `${yyyy}`;
+    
+    // 4. Serial number of joining for that year
+    const startOfYear = new Date(yyyy, 0, 1);
+    const endOfYear = new Date(yyyy + 1, 0, 1);
     const countThisYear = await User.countDocuments({ 
-      createdAt: { $gte: startOfYear, $lt: endOfYear } 
+      joining_date: { $gte: startOfYear, $lt: endOfYear } 
     });
     const serial = (countThisYear + 1).toString().padStart(4, '0');
     
-    const login_id = `${companyPrefix}${nameCode}${joiningYear}${serial}`;
+    // Final Login ID: e.g. OIJODO20220001
+    const login_id = `${compCode}${nameCode}${dateCode}${serial}`;
 
-    // Auto-generate password
-    const rawPassword = `Dayflow@${joiningYear}`;
+    // Auto-generate a completely unique password (e.g. 8 random alphanumeric characters)
+    const crypto = require('crypto');
+    const rawPassword = crypto.randomBytes(4).toString('hex'); // 8 characters
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(rawPassword, salt);
 
@@ -80,18 +96,107 @@ router.post('/employees', authMiddleware, async (req, res) => {
       password: hashedPassword,
       role: 'employee',
       name,
-      company_name: companyName || 'Odoo India',
+      company_name: actualCompanyName,
       phone,
       department,
       position,
       login_id,
-      joining_date: new Date()
+      joining_date: actualJoiningDate,
+      month_wage: Number(monthWage) || 50000,
+      working_days: Number(workingDays) || 5,
+      break_time: Number(breakTime) || 1
     });
 
     await user.save();
 
     const userObj = user.toObject();
     delete userObj.password;
+    
+    // --- Send Welcome Email via Nodemailer ---
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'odooindiahawkinshackerzzz@gmail.com',
+          pass: process.env.EMAIL_PASSWORD || 'missing_password'
+        }
+      });
+
+      const mailOptions = {
+        from: '"Odoo-HRMS Team" <odooindiahawkinshackerzzz@gmail.com>',
+        to: email,
+        subject: 'Welcome to Odoo-HRMS - Your Login Credentials',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Welcome to Odoo-HRMS</title>
+          </head>
+          <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #F3F4F6; margin: 0; padding: 40px 0;">
+            <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden;">
+              <!-- Header -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #502D55 0%, #935073 100%); padding: 40px 30px; text-align: center;">
+                  <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 1px;">Odoo-HRMS</h1>
+                  <p style="color: #fce7f3; margin: 10px 0 0 0; font-size: 16px;">Welcome aboard, ${name}!</p>
+                </td>
+              </tr>
+              
+              <!-- Body -->
+              <tr>
+                <td style="padding: 40px 30px;">
+                  <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-top: 0;">
+                    We are thrilled to have you join our team. Your employee profile has been successfully set up on the <strong>Odoo-HRMS</strong> platform. 
+                  </p>
+                  <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+                    Below are your secure login credentials to access your dashboard, view your payroll, and manage your attendance.
+                  </p>
+                  
+                  <!-- Credentials Box -->
+                  <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 25px; margin: 30px 0; text-align: center;">
+                    <div style="margin-bottom: 15px;">
+                      <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; display: block; margin-bottom: 5px;">Login ID</span>
+                      <strong style="font-size: 20px; color: #111827; font-family: monospace;">${login_id}</strong>
+                    </div>
+                    <div>
+                      <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; display: block; margin-bottom: 5px;">Temporary Password</span>
+                      <strong style="font-size: 20px; color: #111827; font-family: monospace; background: #fee2e2; padding: 4px 12px; border-radius: 6px; color: #991b1b;">${rawPassword}</strong>
+                    </div>
+                  </div>
+                  
+                  <p style="color: #6b7280; font-size: 14px; line-height: 1.5; margin-bottom: 0; border-left: 4px solid #502D55; padding-left: 15px; background: #fdf8fa; padding: 10px 15px;">
+                    <strong>Security Notice:</strong> Please log in using these credentials immediately. We strongly recommend changing your password after your first login to ensure the security of your account.
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="background-color: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #f3f4f6;">
+                  <p style="color: #9ca3af; font-size: 13px; margin: 0;">
+                    This is an automated message from Odoo-HRMS. Please do not reply directly to this email.
+                  </p>
+                  <p style="color: #9ca3af; font-size: 13px; margin: 5px 0 0 0;">
+                    &copy; ${new Date().getFullYear()} Odoo India. All rights reserved.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
+        `
+      };
+
+      if (process.env.EMAIL_PASSWORD) {
+        await transporter.sendMail(mailOptions);
+        console.log(`Welcome email sent to ${email}`);
+      } else {
+        console.warn('EMAIL_PASSWORD not set in .env; skipping email sending.');
+      }
+    } catch (mailError) {
+      console.error('Failed to send welcome email:', mailError);
+    }
     
     // Return the generated password so the Admin can share it with the employee
     res.status(201).json({ user: userObj, generatedPassword: rawPassword });
@@ -366,6 +471,89 @@ router.get('/reports', authMiddleware, async (req, res) => {
       totalBasicPayroll: payrollTotal[0]?.total || 0
     });
   } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/data/notifications
+router.get('/notifications', authMiddleware, async (req, res) => {
+  try {
+    const notifications = await Notification.find({ employee_id: req.user.id })
+      .sort({ createdAt: -1 })
+      .limit(20);
+    res.json(notifications);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// PATCH /api/data/notifications/:id/read
+router.patch('/notifications/:id/read', authMiddleware, async (req, res) => {
+  try {
+    const notification = await Notification.findOneAndUpdate(
+      { _id: req.params.id, employee_id: req.user.id },
+      { is_read: true },
+      { new: true }
+    );
+    if (!notification) return res.status(404).json({ message: 'Notification not found' });
+    res.json(notification);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// PATCH /api/data/profile (Update Resume and Private Info)
+router.patch('/profile', authMiddleware, async (req, res) => {
+  try {
+    const { 
+      employeeId, 
+      about, job_love, hobbies, skills, certifications,
+      address, bank_name, account_number, ifsc_code, emergency_contact_name, emergency_contact_phone, dob, nationality, gender, marital_status,
+      month_wage, working_days, break_time
+    } = req.body;
+
+    // Admin can update anyone's profile if they pass employeeId, otherwise users update their own
+    const targetUserId = (req.user.role === 'admin' && employeeId) ? employeeId : req.user.id;
+
+    const user = await User.findById(targetUserId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Only update fields that are provided
+    if (about !== undefined) user.about = about;
+    if (job_love !== undefined) user.job_love = job_love;
+    if (hobbies !== undefined) user.hobbies = hobbies;
+    if (skills !== undefined) user.skills = skills;
+    if (certifications !== undefined) user.certifications = certifications;
+
+    if (address !== undefined) user.address = address;
+    if (bank_name !== undefined) user.bank_name = bank_name;
+    if (account_number !== undefined) user.account_number = account_number;
+    if (ifsc_code !== undefined) user.ifsc_code = ifsc_code;
+    if (emergency_contact_name !== undefined) user.emergency_contact_name = emergency_contact_name;
+    if (emergency_contact_phone !== undefined) user.emergency_contact_phone = emergency_contact_phone;
+    if (dob !== undefined) user.dob = dob ? new Date(dob) : null;
+    if (nationality !== undefined) user.nationality = nationality;
+    if (gender !== undefined) user.gender = gender;
+    if (marital_status !== undefined) user.marital_status = marital_status;
+
+    // Admin only updates for salary
+    if (req.user.role === 'admin') {
+      if (month_wage !== undefined) user.month_wage = Number(month_wage);
+      if (working_days !== undefined) user.working_days = Number(working_days);
+      if (break_time !== undefined) user.break_time = Number(break_time);
+    }
+
+    await user.save();
+    
+    // Don't send password back
+    const userObj = user.toObject();
+    delete userObj.password;
+
+    res.json(userObj);
+  } catch (error) {
+    console.error('Profile update error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

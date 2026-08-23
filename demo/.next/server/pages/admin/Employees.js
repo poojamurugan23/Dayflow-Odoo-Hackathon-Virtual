@@ -1,0 +1,10 @@
+var R=require("../../chunks/ssr/[turbopack]_runtime.js")("server/pages/admin/Employees.js")
+R.c("server/chunks/ssr/[root-of-the-server]__334aff55._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__1c22191f._.js")
+R.c("server/chunks/ssr/node_modules_next_f71b9665._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__1991f233._.js")
+R.c("server/chunks/ssr/node_modules_lucide-react_dist_esm_icons_briefcase_mjs_1f5e24b8._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_ac971c2d._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_esm_build_templates_pages_91598cea.js")
+R.m(43325)
+module.exports=R.m(43325).exports

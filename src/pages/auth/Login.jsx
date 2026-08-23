@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, UserCircle2 } from 'lucide-react';
 
 export function Login() {
   const [loginId, setLoginId] = useState('');
@@ -30,6 +30,17 @@ export function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const demoProfiles = [
+    { name: 'Admin User', id: 'admin@dayflow.demo', pass: 'admin123', role: 'Admin' },
+    { name: 'Sarah Connor', id: 'OISACO20260002', pass: 'password123', role: 'Employee' },
+    { name: 'David Miller', id: 'OIDAMI20260003', pass: 'password123', role: 'Employee' }
+  ];
+
+  const handleQuickLogin = (profile) => {
+    setLoginId(profile.id);
+    setPassword(profile.pass);
   };
 
   return (
@@ -125,9 +136,27 @@ export function Login() {
           <p className="mt-10 text-center text-sm font-medium text-gray-500">
             Don't have an Account?{' '}
             <Link to="/signup" className="text-[#935073] hover:text-[#502D55] font-semibold underline underline-offset-4 transition-colors">
-              Sign up as Admin
+              Sign Up
             </Link>
           </p>
+
+          <div className="mt-8 pt-8 border-t border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-500 mb-4 text-center uppercase tracking-wider">Saved Demo Profiles</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {demoProfiles.map((profile, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleQuickLogin(profile)}
+                  className="flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 bg-gray-50 hover:bg-[#502D55] hover:border-[#502D55] text-gray-700 hover:text-white transition-all group shadow-sm"
+                >
+                  <UserCircle2 size={24} className="mb-1 text-gray-400 group-hover:text-white/80 transition-colors" />
+                  <span className="text-xs font-bold whitespace-nowrap">{profile.name}</span>
+                  <span className="text-[10px] font-medium opacity-70">{profile.role}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

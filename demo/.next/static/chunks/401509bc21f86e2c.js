@@ -1,0 +1,7 @@
+__turbopack_load_page_chunks__("/employee/Profile", [
+  "static/chunks/bea4695a133c7cc0.js",
+  "static/chunks/140da365a7432d14.js",
+  "static/chunks/e0994f7309880bd5.js",
+  "static/chunks/db8d97f5d97d4ad1.css",
+  "static/chunks/turbopack-001e795edea3a561.js"
+])

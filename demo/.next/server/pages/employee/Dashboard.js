@@ -1,0 +1,10 @@
+var R=require("../../chunks/ssr/[turbopack]_runtime.js")("server/pages/employee/Dashboard.js")
+R.c("server/chunks/ssr/[root-of-the-server]__334aff55._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__1c22191f._.js")
+R.c("server/chunks/ssr/node_modules_next_f71b9665._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__fb0c7c3b._.js")
+R.c("server/chunks/ssr/node_modules_next_dist_esm_build_templates_pages_e29224c5.js")
+R.c("server/chunks/ssr/node_modules_next_dist_ac971c2d._.js")
+R.c("server/chunks/ssr/node_modules_lucide-react_dist_esm_icons_briefcase_mjs_1f5e24b8._.js")
+R.m(56788)
+module.exports=R.m(56788).exports

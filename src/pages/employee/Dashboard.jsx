@@ -11,7 +11,7 @@ import { formatDate } from '../../lib/mockData';
 const STATUS_CONFIG = {
   present: { dot: 'bg-green-500', label: 'Present in office' },
   leave:   { icon: <Plane size={14} className="text-sky-500" />, label: 'On Leave' },
-  absent:  { dot: 'bg-gray-400', label: 'Absent (no time off applied)' },
+  absent:  { dot: 'bg-yellow-500', label: 'Absent' },
 };
 
 function StatusDot({ status }) {
@@ -77,6 +77,7 @@ export function EmployeeDashboard() {
       if (res.ok) {
         const data = await res.json();
         setEmployees(data.map(emp => ({
+          ...emp, // Spread all fields including new schema fields
           id: emp._id,
           employeeId: emp.login_id,
           name: emp.name,
@@ -204,11 +205,9 @@ export function EmployeeDashboard() {
           <p className="mt-1 text-sm text-[#6B7280]">Directory of your colleagues. Click any card to view their profile.</p>
         </div>
 
-        {/* Action Bar: NEW + Search */}
-        <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <button className="inline-flex items-center gap-2 rounded-lg bg-[#C05688] hover:bg-[#a84472] text-white px-5 py-2 text-sm font-bold shadow-sm transition-colors">
-            <Plus size={15} /> NEW
-          </button>
+        {/* Action Bar: Search */}
+        <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex flex-col sm:flex-row justify-end items-start sm:items-center gap-3">
+
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
@@ -223,7 +222,7 @@ export function EmployeeDashboard() {
         <div className="flex flex-wrap items-center gap-5 text-xs text-gray-600 px-1">
           <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-green-500" /><span>Present in office</span></div>
           <div className="flex items-center gap-1.5"><Plane size={13} className="text-sky-500" /><span>On leave</span></div>
-          <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-gray-400" /><span>Absent (no time off)</span></div>
+          <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-yellow-500" /><span>Absent</span></div>
         </div>
 
         {/* Employee Cards Grid */}
@@ -241,23 +240,61 @@ export function EmployeeDashboard() {
               <div
                 key={emp.id}
                 onClick={() => setSelectedEmployee(emp)}
-                className="bg-white rounded-xl border border-gray-200 p-5 relative cursor-pointer hover:border-[#502D55]/40 hover:shadow-md transition-all group"
+                className="bg-white rounded-xl border border-gray-200 p-5 relative cursor-pointer hover:border-[#502D55]/40 hover:shadow-md transition-all group flex flex-col h-full"
               >
-                {/* Status indicator — top right */}
-                <div className="absolute top-3.5 right-3.5">
-                  <StatusDot status={emp.attendanceStatus} />
+                {/* Header: Avatar + Details */}
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="relative">
+                    <div className="h-14 w-14 rounded-full bg-gradient-to-br from-[#502D55] to-[#935073] text-white flex items-center justify-center text-lg font-bold shadow-sm group-hover:scale-105 transition-transform shrink-0">
+                      {emp.avatar}
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 rounded-full border-2 border-white bg-white">
+                      <StatusDot status={emp.attendanceStatus} />
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 min-w-0 pt-1">
+                    <h3 className="text-sm font-bold text-[#171923] truncate leading-tight">{emp.name}</h3>
+                    <p className="text-xs text-[#502D55] font-semibold mt-1 truncate">{emp.position}</p>
+                    <p className="text-[11px] text-gray-500 font-medium truncate flex items-center gap-1 mt-0.5">
+                      <Briefcase size={10} /> {emp.department}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex flex-col items-center text-center gap-2">
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-[#502D55] to-[#935073] text-white flex items-center justify-center text-xl font-bold shadow-sm group-hover:scale-105 transition-transform">
-                    {emp.avatar}
+                {/* Body: Contact Info */}
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                    <Mail size={12} className="text-gray-400 shrink-0" />
+                    <span className="truncate">{emp.email}</span>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-[#171923] leading-snug">{emp.name}</h3>
-                    <p className="text-xs text-[#935073] font-medium mt-0.5">{emp.position}</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">{emp.department}</p>
+                  <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                    <Phone size={12} className="text-gray-400 shrink-0" />
+                    <span className="truncate">{emp.phone}</span>
                   </div>
-                  <span className="mt-1 inline-flex items-center rounded-full bg-gray-50 border border-gray-200 px-2 py-0.5 text-[10px] font-mono text-gray-500">
+                </div>
+
+                {/* Footer: Skills & ID */}
+                <div className="mt-auto pt-4 border-t border-gray-100 flex flex-wrap items-end justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    {emp.skills && emp.skills.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {emp.skills.slice(0, 3).map(skill => (
+                          <span key={skill} className="px-1.5 py-0.5 rounded text-[9px] bg-gray-50 border border-gray-200 text-gray-600 font-medium whitespace-nowrap">
+                            {skill}
+                          </span>
+                        ))}
+                        {emp.skills.length > 3 && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] bg-gray-50 border border-gray-200 text-gray-400 font-medium">
+                            +{emp.skills.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-gray-400 italic">No skills listed</span>
+                    )}
+                  </div>
+                  <span className="inline-flex items-center rounded-md bg-[#502D55]/5 px-1.5 py-0.5 text-[9px] font-mono font-bold text-[#502D55] whitespace-nowrap shrink-0">
                     {emp.employeeId}
                   </span>
                 </div>

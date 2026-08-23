@@ -1,0 +1,15 @@
+{
+  "devFiles": [],
+  "ampDevFiles": [],
+  "polyfillFiles": [],
+  "lowPriorityFiles": [],
+  "rootMainFiles": [],
+  "pages": {
+    "/admin/Employees": [
+      "static/chunks/a3a5310e0eb914ee.js",
+      "static/chunks/140da365a7432d14.js",
+      "static/chunks/turbopack-ca4cb1b33c2f98ee.js"
+    ]
+  },
+  "ampFirstPages": []
+}

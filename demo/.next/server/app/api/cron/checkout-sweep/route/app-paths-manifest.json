@@ -1,0 +1,3 @@
+{
+  "/api/cron/checkout-sweep/route": "app/api/cron/checkout-sweep/route.js"
+}

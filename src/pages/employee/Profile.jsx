@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Mail, Phone, MapPin, Briefcase, Calendar, Shield, Building, UserCheck, Edit3, Plus, CheckCircle, Lock, Eye, EyeOff, Loader2, Save } from 'lucide-react';
+import { Mail, Phone, MapPin, Briefcase, Calendar as CalendarIcon, Shield, Building, UserCheck, Edit3, Plus, CheckCircle, Lock, Eye, EyeOff, Loader2, Save } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { formatDate } from '../../lib/mockData';
 
 export function EmployeeProfile() {
@@ -11,9 +13,17 @@ export function EmployeeProfile() {
   const isAdmin = role === 'admin' || user?.role === 'admin';
 
   // --- Dynamic Live Salary Calculator State ---
-  const [monthWage, setMonthWage] = useState(50000);
-  const [workingDays, setWorkingDays] = useState(5);
-  const [breakTime, setBreakTime] = useState(1);
+  const [monthWage, setMonthWage] = useState(user?.month_wage || 50000);
+  const [workingDays, setWorkingDays] = useState(user?.working_days || 5);
+  const [breakTime, setBreakTime] = useState(user?.break_time || 1);
+
+  useEffect(() => {
+    if (user) {
+      setMonthWage(user.month_wage || 50000);
+      setWorkingDays(user.working_days || 5);
+      setBreakTime(user.break_time || 1);
+    }
+  }, [user]);
 
   // Auto Calculations based on monthWage
   const yearlyWage = monthWage * 12;
@@ -31,44 +41,31 @@ export function EmployeeProfile() {
   const professionalTax = 200.00;
 
   // --- Resume Editable State ---
-  const [about, setAbout] = useState(
-    'Dedicated professional passionate about building reliable software solutions and optimizing workforce productivity. Experienced in team leadership and agile development.'
-  );
-  const [loveJob, setLoveJob] = useState(
-    'I love collaborating with cross-functional teams, solving complex architectural challenges, and seeing products make a measurable impact.'
-  );
-  const [hobbies, setHobbies] = useState(
-    'Reading tech blogs, playing chess, outdoor trekking, and exploring new coffee brewing techniques.'
-  );
+  const [about, setAbout] = useState(user?.about || 'Write a short bio about yourself.');
+  const [loveJob, setLoveJob] = useState(user?.job_love || 'What do you love about your job?');
+  const [hobbies, setHobbies] = useState(user?.hobbies || 'List your interests and hobbies here.');
 
-  const [skills, setSkills] = useState(['React.js', 'Node.js', 'MongoDB', 'System Design', 'Team Leadership', 'HR Operations']);
+  const [skills, setSkills] = useState(user?.skills || []);
   const [newSkill, setNewSkill] = useState('');
   const [showSkillInput, setShowSkillInput] = useState(false);
 
-  const [certifications, setCertifications] = useState([
-    'AWS Certified Solutions Architect',
-    'Certified Scrum Master (CSM)',
-    'Full Stack Web Development Professional'
-  ]);
+  const [certifications, setCertifications] = useState(user?.certifications || []);
   const [newCert, setNewCert] = useState('');
   const [showCertInput, setShowCertInput] = useState(false);
 
-  // --- Private Info State (Exact Wireframe Fields) ---
+  // --- Private Info State ---
   const [privateInfo, setPrivateInfo] = useState({
-    dob: '1996-03-15',
-    residingAddress: 'Flat 402, Lotus Residency, Indiranagar, Bangalore',
-    nationality: 'Indian',
-    personalEmail: 'pooja.personal@gmail.com',
-    gender: 'Female',
-    maritalStatus: 'Single',
-    dateOfJoining: '2026-01-10',
-    // Bank Details
-    accountNumber: '91827364501928',
-    bankName: 'HDFC Bank',
-    ifscCode: 'HDFC0001234',
-    panNo: 'ABCDE1234F',
-    uanNo: '100928374651',
-    pinCode: '560038'
+    dob: user?.dob ? new Date(user.dob) : null,
+    address: user?.address || '',
+    nationality: user?.nationality || '',
+    gender: user?.gender || '',
+    marital_status: user?.marital_status || '',
+    account_number: user?.account_number || '',
+    bank_name: user?.bank_name || '',
+    ifsc_code: user?.ifsc_code || '',
+    emergency_contact_name: user?.emergency_contact_name || '',
+    emergency_contact_phone: user?.emergency_contact_phone || '',
+    dateOfJoining: user?.joining_date ? new Date(user.joining_date) : null
   });
 
   // --- Security Password State ---
@@ -81,7 +78,32 @@ export function EmployeeProfile() {
   const [changePwError, setChangePwError] = useState(null);
   const [changePwSuccess, setChangePwSuccess] = useState(false);
 
+  const [saveLoading, setSaveLoading] = useState(false);
+
   const toast = (msg) => { setShowToast(msg); setTimeout(() => setShowToast(null), 3000); };
+
+  const handleSaveProfile = async () => {
+    setSaveLoading(true);
+    try {
+      const token = localStorage.getItem('dayflow_token');
+      const res = await fetch('http://localhost:5000/api/data/profile', {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          about, job_love: loveJob, hobbies, skills, certifications, ...privateInfo,
+          ...(isAdmin ? { month_wage: monthWage, working_days: workingDays, break_time: breakTime } : {})
+        })
+      });
+      if (res.ok) {
+        toast('Profile saved successfully');
+      } else {
+        toast('Failed to save profile');
+      }
+    } catch (error) {
+      toast('Server error');
+    }
+    setSaveLoading(false);
+  };
 
   const handleAddSkill = (e) => {
     e.preventDefault();
@@ -89,7 +111,10 @@ export function EmployeeProfile() {
     setSkills([...skills, newSkill.trim()]);
     setNewSkill('');
     setShowSkillInput(false);
-    toast('Skill added successfully');
+  };
+
+  const handleRemoveSkill = (skillToRemove) => {
+    setSkills(skills.filter(s => s !== skillToRemove));
   };
 
   const handleAddCert = (e) => {
@@ -98,14 +123,17 @@ export function EmployeeProfile() {
     setCertifications([...certifications, newCert.trim()]);
     setNewCert('');
     setShowCertInput(false);
-    toast('Certification added successfully');
   };
 
-  // Dynamic Tabs: Salary Info is visible to Admin only
+  const handleRemoveCert = (certToRemove) => {
+    setCertifications(certifications.filter(c => c !== certToRemove));
+  };
+
+  // Dynamic Tabs
   const tabs = [
     { id: 'resume', name: 'Resume' },
     { id: 'private', name: 'Private Info' },
-    ...(isAdmin ? [{ id: 'salary', name: 'Salary Info' }] : []),
+    { id: 'salary', name: 'Salary Info' },
     { id: 'security', name: 'Security' }
   ];
 
@@ -201,24 +229,37 @@ export function EmployeeProfile() {
 
       {/* Tab 1: Resume */}
       {activeTab === 'resume' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left 2 Columns: About, Love about job, Interests */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* About */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-[#171923] font-serif uppercase tracking-wider">About</h3>
-                <button onClick={() => toast('Editing About section')} className="text-gray-400 hover:text-[#502D55]">
-                  <Edit3 size={15} />
-                </button>
-              </div>
-              <textarea 
-                value={about}
-                onChange={e => setAbout(e.target.value)}
-                rows={3}
-                className="w-full text-xs text-[#6B7280] leading-relaxed border-0 focus:ring-1 focus:ring-[#502D55] rounded-lg p-2 bg-gray-50/50"
-              />
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-bold text-[#171923] font-serif">Resume & Skills</h3>
+              <p className="text-xs text-[#6B7280] mt-0.5">Manage your professional background and skill set.</p>
             </div>
+            <button 
+              onClick={handleSaveProfile}
+              disabled={saveLoading}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#502D55] text-white text-xs font-bold shadow-xs hover:bg-[#3e2342] transition-colors disabled:opacity-70"
+            >
+              {saveLoading ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} 
+              Save Details
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left 2 Columns: About, Love about job, Interests */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* About */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-[#171923] font-serif uppercase tracking-wider">About</h3>
+                </div>
+                <textarea 
+                  value={about}
+                  onChange={e => setAbout(e.target.value)}
+                  rows={3}
+                  className="w-full text-xs text-[#6B7280] leading-relaxed border border-gray-200 focus:ring-1 focus:ring-[#502D55] rounded-lg p-3 bg-gray-50/50"
+                />
+              </div>
 
             {/* What I love about my job */}
             <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs">
@@ -324,6 +365,7 @@ export function EmployeeProfile() {
             </div>
           </div>
         </div>
+        </div>
       )}
 
       {/* Tab 2: Private Info (Exact Wireframe Fields & Layout) */}
@@ -351,12 +393,19 @@ export function EmployeeProfile() {
 
               <div>
                 <label className="block text-xs text-gray-500 font-medium mb-1">Date of Birth</label>
-                <input 
-                  type="date"
-                  value={privateInfo.dob}
-                  onChange={e => setPrivateInfo({ ...privateInfo, dob: e.target.value })}
-                  className="w-full text-xs font-semibold border border-gray-200 rounded-lg p-2 bg-gray-50/50 focus:border-[#502D55] focus:outline-none"
-                />
+                <div className="relative">
+                  <DatePicker
+                    selected={privateInfo.dob}
+                    onChange={(date) => setPrivateInfo({ ...privateInfo, dob: date })}
+                    dateFormat="dd MMM yyyy"
+                    showMonthDropdown
+                    showYearDropdown
+                    dropdownMode="select"
+                    className="w-full text-xs font-semibold border border-gray-200 rounded-lg p-2.5 bg-gray-50/50 focus:border-[#502D55] focus:outline-none"
+                    placeholderText="Select Date"
+                  />
+                  <CalendarIcon className="absolute right-3 top-2.5 text-gray-400 pointer-events-none" size={14} />
+                </div>
               </div>
 
               <div>
@@ -417,12 +466,19 @@ export function EmployeeProfile() {
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 font-medium mb-1">Date of Joining</label>
-                  <input 
-                    type="date"
-                    value={privateInfo.dateOfJoining}
-                    onChange={e => setPrivateInfo({ ...privateInfo, dateOfJoining: e.target.value })}
-                    className="w-full text-xs font-semibold border border-gray-200 rounded-lg p-2 bg-gray-50/50 focus:border-[#502D55] focus:outline-none"
-                  />
+                  <div className="relative">
+                    <DatePicker
+                      selected={privateInfo.dateOfJoining}
+                      onChange={(date) => setPrivateInfo({ ...privateInfo, dateOfJoining: date })}
+                      dateFormat="dd MMM yyyy"
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
+                      className="w-full text-xs font-semibold border border-gray-200 rounded-lg p-2.5 bg-gray-50/50 focus:border-[#502D55] focus:outline-none"
+                      placeholderText="Select Date"
+                    />
+                    <CalendarIcon className="absolute right-3 top-2.5 text-gray-400 pointer-events-none" size={14} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -486,12 +542,12 @@ export function EmployeeProfile() {
               </div>
 
               <div>
-                <label className="block text-xs text-gray-500 font-medium mb-1">Pin Code</label>
+                <label className="block text-xs text-gray-500 font-medium mb-1">Emp Code</label>
                 <input 
                   type="text"
-                  value={privateInfo.pinCode}
-                  onChange={e => setPrivateInfo({ ...privateInfo, pinCode: e.target.value })}
-                  className="w-full text-xs font-mono font-bold border border-gray-200 rounded-lg p-2 bg-gray-50/50 focus:border-[#502D55] focus:outline-none"
+                  value={privateInfo.empCode || user?.login_id || 'OIPOOJ20260001'}
+                  disabled
+                  className="w-full text-xs font-mono font-bold border border-gray-200 rounded-lg p-2 bg-gray-100 text-gray-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -499,9 +555,24 @@ export function EmployeeProfile() {
         </div>
       )}
 
-      {/* Tab 3: Salary Info (Strictly Admin-Only Wireframe Implementation with Real-Time Calculations) */}
-      {activeTab === 'salary' && isAdmin && (
+      {/* Tab 3: Salary Info (Read-only for employee, Editable for Admin) */}
+      {activeTab === 'salary' && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-8 shadow-xs">
+          
+          {isAdmin && (
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-xs text-[#6B7280]">Update employee salary components here. (Admin/HR Only)</span>
+              <button 
+                onClick={handleSaveProfile}
+                disabled={saveLoading}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#502D55] text-white text-xs font-bold shadow-xs hover:bg-[#3e2342] transition-colors disabled:opacity-70"
+              >
+                {saveLoading ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} 
+                Save Salary Info
+              </button>
+            </div>
+          )}
+
           {/* Header Wage & Schedule Controls (Live Dynamic Inputs) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-6 border-b border-gray-200">
             {/* Left Wage Controls */}
@@ -513,7 +584,8 @@ export function EmployeeProfile() {
                     type="number"
                     value={monthWage}
                     onChange={e => setMonthWage(Math.max(0, Number(e.target.value) || 0))}
-                    className="w-36 text-sm font-mono font-bold text-[#502D55] border border-gray-200 rounded-lg px-3 py-1.5 text-right focus:border-[#502D55] focus:outline-none"
+                    disabled={!isAdmin}
+                    className={`w-36 text-sm font-mono font-bold text-[#502D55] border border-gray-200 rounded-lg px-3 py-1.5 text-right focus:border-[#502D55] focus:outline-none ${!isAdmin ? 'bg-gray-50' : 'bg-white'}`}
                   />
                   <span className="text-xs text-gray-500 font-medium">/ Month</span>
                 </div>
@@ -538,7 +610,8 @@ export function EmployeeProfile() {
                   type="number"
                   value={workingDays}
                   onChange={e => setWorkingDays(Number(e.target.value))}
-                  className="w-20 text-xs font-mono font-bold text-gray-800 border border-gray-200 rounded-lg px-2.5 py-1.5 text-center focus:border-[#502D55] focus:outline-none"
+                  disabled={!isAdmin}
+                  className={`w-20 text-xs font-mono font-bold text-gray-800 border border-gray-200 rounded-lg px-2.5 py-1.5 text-center focus:border-[#502D55] focus:outline-none ${!isAdmin ? 'bg-gray-50' : 'bg-white'}`}
                 />
               </div>
 
@@ -549,7 +622,8 @@ export function EmployeeProfile() {
                     type="number"
                     value={breakTime}
                     onChange={e => setBreakTime(Number(e.target.value))}
-                    className="w-20 text-xs font-mono font-bold text-gray-800 border border-gray-200 rounded-lg px-2.5 py-1.5 text-center focus:border-[#502D55] focus:outline-none"
+                    disabled={!isAdmin}
+                    className={`w-20 text-xs font-mono font-bold text-gray-800 border border-gray-200 rounded-lg px-2.5 py-1.5 text-center focus:border-[#502D55] focus:outline-none ${!isAdmin ? 'bg-gray-50' : 'bg-white'}`}
                   />
                   <span className="text-xs text-gray-500 font-medium">/ hrs</span>
                 </div>

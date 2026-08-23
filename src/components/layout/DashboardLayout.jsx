@@ -1,18 +1,57 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
   LayoutDashboard, Users, Clock, Calendar, CreditCard, FileText, Settings, LogOut, Menu, X, Bell, Search, ChevronDown
 } from 'lucide-react';
-import { NOTIFICATIONS } from '../../lib/mockData';
 
 export function DashboardLayout({ children, role }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const fetchNotifications = async () => {
+    try {
+      const token = localStorage.getItem('dayflow_token');
+      if (!token) return;
+      const res = await fetch('http://localhost:5000/api/data/notifications', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications');
+    }
+  };
+
+  useEffect(() => {
+    // Initial fetch
+    fetchNotifications();
+    
+    // Polling every 5 seconds for "real-time" updates
+    const intervalId = setInterval(fetchNotifications, 5000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      const token = localStorage.getItem('dayflow_token');
+      await fetch(`http://localhost:5000/api/data/notifications/${id}/read`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchNotifications();
+    } catch (error) {
+      console.error('Failed to mark notification as read');
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -35,7 +74,7 @@ export function DashboardLayout({ children, role }) {
   ];
 
   const navItems = role === 'admin' ? adminNav : employeeNav;
-  const unreadCount = NOTIFICATIONS.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const isActive = (path) => location.pathname === path;
 
@@ -112,26 +151,39 @@ export function DashboardLayout({ children, role }) {
             <div className="relative">
               <button onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }} className="relative p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
                 <Bell size={20} />
-                {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500"></span>}
+                {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>}
               </button>
               {notifOpen && (
                 <div className="absolute right-0 mt-2 w-80 rounded-lg bg-white shadow-lg border border-gray-200 z-50">
                   <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
                     <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
-                    <button className="text-xs text-[#502D55] hover:text-[#935073] font-medium">Mark all read</button>
+                    <button onClick={async () => {
+                      for (const n of notifications.filter(x => !x.is_read)) {
+                        await handleMarkAsRead(n._id);
+                      }
+                    }} className="text-xs text-[#502D55] hover:text-[#935073] font-medium">Mark all read</button>
                   </div>
                   <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
-                    {NOTIFICATIONS.map(n => (
-                      <div key={n.id} className={`px-4 py-3 hover:bg-gray-50 transition-colors ${!n.read ? 'bg-[#502D55]/[0.02]' : ''}`}>
-                        <div className="flex items-start gap-3">
-                          {!n.read && <span className="mt-1.5 h-2 w-2 rounded-full bg-[#502D55] flex-shrink-0"></span>}
-                          <div className={!n.read ? '' : 'ml-5'}>
-                            <p className="text-sm font-medium text-gray-900">{n.title}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-gray-500 text-sm">No new notifications</div>
+                    ) : (
+                      notifications.map(n => (
+                        <div 
+                          key={n._id} 
+                          onClick={() => handleMarkAsRead(n._id)}
+                          className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors ${!n.is_read ? 'bg-[#502D55]/[0.02]' : ''}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            {!n.is_read && <span className="mt-1.5 h-2 w-2 rounded-full bg-[#502D55] flex-shrink-0 animate-pulse"></span>}
+                            <div className={!n.is_read ? '' : 'ml-5'}>
+                              <p className="text-sm font-medium text-gray-900">{n.title}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{n.message}</p>
+                              <p className="text-[10px] text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -158,9 +210,11 @@ export function DashboardLayout({ children, role }) {
                   {role !== 'admin' ? (
                     <button onClick={() => { navigate('/employee/profile'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Users size={16} /> My Profile</button>
                   ) : (
-                    <button onClick={() => { navigate('/admin/profile'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Users size={16} /> My Profile</button>
+                    <>
+                      <button onClick={() => { navigate('/admin/profile'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Users size={16} /> My Profile</button>
+                      <button onClick={() => { navigate('/admin/settings'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Settings size={16} /> Settings</button>
+                    </>
                   )}
-                  <button onClick={() => { navigate(role === 'admin' ? '/admin/settings' : '/employee/settings'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Settings size={16} /> Settings</button>
                   <button onClick={handleLogout} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"><LogOut size={16} /> Sign Out</button>
                 </div>
               )}

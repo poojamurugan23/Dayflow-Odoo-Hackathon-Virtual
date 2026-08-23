@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DEPARTMENTS, formatDate } from '../../lib/mockData';
-import { Search, Plus, LayoutGrid, List, Eye, Edit3, X, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Plus, LayoutGrid, List, Eye, Edit3, X, Loader2, ChevronDown, ChevronUp, Mail, Phone, Briefcase } from 'lucide-react';
 import { EmployeeProfileModal } from '../../components/EmployeeProfileModal';
 
 /* ── Salary auto-calc helper ──────────────────────────────── */
@@ -133,6 +133,7 @@ export function AdminEmployees() {
       if (response.ok) {
         const data = await response.json();
         const mapped = data.map(emp => ({
+          ...emp, // Spread all fields including new schema fields
           id: emp._id,
           employeeId: emp.login_id,
           name: emp.name,
@@ -180,6 +181,7 @@ export function AdminEmployees() {
           department: form.department.value,
           position: form.position.value,
           companyName: adminUser?.company_name || 'Odoo India',
+          joiningDate: form.joiningDate.value,
           monthWage: Number(monthWage) || 0
         })
       });
@@ -307,15 +309,66 @@ export function AdminEmployees() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map(emp => (
             <div key={emp.id} onClick={() => setSelectedEmployee(emp)}
-              className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col items-center text-center hover:border-[#502D55]/30 hover:shadow-md transition-all cursor-pointer group">
-              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-[#502D55] to-[#935073] text-white flex items-center justify-center text-xl font-bold mb-3 group-hover:scale-105 transition-transform">{emp.avatar}</div>
-              <h3 className="text-sm font-semibold text-[#171923] font-serif">{emp.name}</h3>
-              <p className="text-xs text-[#502D55] font-medium mt-0.5">{emp.position}</p>
-              <p className="text-xs text-[#6B7280] mt-0.5">{emp.department}</p>
-              <p className="text-xs text-[#6B7280] font-mono mt-1">{emp.employeeId}</p>
-              <span className={`mt-3 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                emp.status === 'Active' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'
-              }`}>{emp.status}</span>
+              className="bg-white rounded-xl border border-gray-200 p-5 relative cursor-pointer hover:border-[#502D55]/40 hover:shadow-md transition-all group flex flex-col h-full"
+            >
+              {/* Header: Avatar + Details */}
+              <div className="flex items-start gap-4 mb-4">
+                <div className="relative">
+                  <div className="h-14 w-14 rounded-full bg-gradient-to-br from-[#502D55] to-[#935073] text-white flex items-center justify-center text-lg font-bold shadow-sm group-hover:scale-105 transition-transform shrink-0">
+                    {emp.avatar}
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 rounded-full border-2 border-white bg-white">
+                    <span className={`flex items-center justify-center h-3 w-3 rounded-full ring-2 ring-white shadow-sm ${
+                      emp.status === 'Active' ? 'bg-green-500' : 'bg-yellow-500'
+                    }`} />
+                  </div>
+                </div>
+                
+                <div className="flex-1 min-w-0 pt-1 text-left">
+                  <h3 className="text-sm font-bold text-[#171923] truncate leading-tight">{emp.name}</h3>
+                  <p className="text-xs text-[#502D55] font-semibold mt-1 truncate">{emp.position}</p>
+                  <p className="text-[11px] text-gray-500 font-medium truncate flex items-center gap-1 mt-0.5">
+                    <Briefcase size={10} /> {emp.department}
+                  </p>
+                </div>
+              </div>
+
+              {/* Body: Contact Info */}
+              <div className="space-y-2 mb-4 w-full">
+                <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                  <Mail size={12} className="text-gray-400 shrink-0" />
+                  <span className="truncate">{emp.email}</span>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                  <Phone size={12} className="text-gray-400 shrink-0" />
+                  <span className="truncate">{emp.phone}</span>
+                </div>
+              </div>
+
+              {/* Footer: Skills & ID */}
+              <div className="mt-auto pt-4 border-t border-gray-100 flex flex-wrap items-end justify-between gap-2 w-full">
+                <div className="flex-1 min-w-0">
+                  {emp.skills && emp.skills.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {emp.skills.slice(0, 3).map(skill => (
+                        <span key={skill} className="px-1.5 py-0.5 rounded text-[9px] bg-gray-50 border border-gray-200 text-gray-600 font-medium whitespace-nowrap">
+                          {skill}
+                        </span>
+                      ))}
+                      {emp.skills.length > 3 && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-gray-50 border border-gray-200 text-gray-400 font-medium">
+                          +{emp.skills.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-[10px] text-gray-400 italic">No skills listed</span>
+                  )}
+                </div>
+                <span className="inline-flex items-center rounded-md bg-[#502D55]/5 px-1.5 py-0.5 text-[9px] font-mono font-bold text-[#502D55] whitespace-nowrap shrink-0">
+                  {emp.employeeId}
+                </span>
+              </div>
             </div>
           ))}
         </div>
@@ -381,70 +434,96 @@ export function AdminEmployees() {
               </div>
             ) : (
               /* ─ Form ─ */
-              <form onSubmit={handleAddEmployee} className="p-6 space-y-4">
-                {/* Full Name */}
+              <form onSubmit={handleAddEmployee} className="p-6 space-y-6">
+                
+                {/* Section 1: Personal Details */}
                 <div>
-                  <label className="block text-sm font-semibold text-[#171923] mb-1.5">Full Name <span className="text-red-500">*</span></label>
-                  <input name="name" type="text" required className="block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-1 focus:ring-[#502D55]" />
-                </div>
-
-                {/* Email + Phone */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-[#171923] mb-1.5">Email <span className="text-red-500">*</span></label>
-                    <input name="email" type="email" required className="block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-1 focus:ring-[#502D55]" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-[#171923] mb-1.5">Phone</label>
-                    <input name="phone" type="tel" className="block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-1 focus:ring-[#502D55]" />
-                  </div>
-                </div>
-
-                {/* Department + Position */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-[#171923] mb-1.5">Department</label>
-                    <select name="department" className="block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-1 focus:ring-[#502D55]">
-                      {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-[#171923] mb-1.5">Position <span className="text-red-500">*</span></label>
-                    <input name="position" type="text" required className="block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-1 focus:ring-[#502D55]" />
+                  <h4 className="text-xs font-bold text-[#502D55] uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">Personal Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Full Name <span className="text-red-500">*</span></label>
+                      <input name="name" type="text" required placeholder="e.g. Jane Doe" className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all placeholder:text-gray-400" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Email Address <span className="text-red-500">*</span></label>
+                      <input name="email" type="email" required placeholder="jane@example.com" className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all placeholder:text-gray-400" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Phone Number</label>
+                      <input name="phone" type="tel" placeholder="+91 98765 43210" className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all placeholder:text-gray-400" />
+                    </div>
                   </div>
                 </div>
 
-                {/* ── Monthly Wage — triggers live salary preview ── */}
+                {/* Section 2: Job Details */}
                 <div>
-                  <label className="block text-sm font-semibold text-[#171923] mb-1.5">
-                    Monthly Wage (₹)
-                    <span className="ml-2 text-[11px] text-[#935073] font-normal">→ All salary components auto-calculate below</span>
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="number"
-                      value={monthWage}
-                      onChange={e => setMonthWage(e.target.value)}
-                      placeholder="e.g. 50000"
-                      min="0"
-                      className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-1 focus:ring-[#502D55] font-mono"
-                    />
-                    <span className="text-sm text-gray-500 shrink-0">/ Month</span>
-                    {monthWage > 0 && (
-                      <span className="text-sm font-mono font-bold text-[#502D55] shrink-0">
-                        = ₹{(Number(monthWage) * 12).toLocaleString('en-IN')} / Year
-                      </span>
-                    )}
+                  <h4 className="text-xs font-bold text-[#502D55] uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">Job Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Department <span className="text-red-500">*</span></label>
+                      <select name="department" className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all">
+                        {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Position <span className="text-red-500">*</span></label>
+                      <input name="position" type="text" required placeholder="e.g. Senior Engineer" className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all placeholder:text-gray-400" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Joining Date <span className="text-red-500">*</span></label>
+                      <input name="joiningDate" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all text-gray-700" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Compensation & Schedule */}
+                <div>
+                  <h4 className="text-xs font-bold text-[#502D55] uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">Compensation & Schedule</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div className="md:col-span-1">
+                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Monthly Wage (₹)</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-mono">₹</span>
+                        <input
+                          type="number"
+                          value={monthWage}
+                          onChange={e => setMonthWage(e.target.value)}
+                          placeholder="50000"
+                          min="0"
+                          className="block w-full pl-8 pr-4 py-2.5 rounded-lg border border-gray-200 bg-white text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all font-mono placeholder:text-gray-400"
+                        />
+                      </div>
+                    </div>
+                    <div className="md:col-span-1">
+                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Working Days/Wk</label>
+                      <input
+                        type="number"
+                        defaultValue={5}
+                        min="1" max="7"
+                        className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all font-mono"
+                      />
+                    </div>
+                    <div className="md:col-span-1">
+                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Break Time (hrs)</label>
+                      <input
+                        type="number"
+                        defaultValue={1}
+                        min="0" max="24"
+                        className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all font-mono"
+                      />
+                    </div>
                   </div>
                 </div>
 
                 {/* Live Salary Preview — appears as soon as wage is typed */}
-                <SalaryPreview monthWage={monthWage} />
+                <div className="mt-4">
+                  <SalaryPreview monthWage={monthWage} />
+                </div>
 
-                <div className="flex justify-end gap-3 pt-4 mt-2 border-t border-gray-100">
-                  <button type="button" onClick={() => { setShowAddModal(false); setMonthWage(''); }} className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-                  <button type="submit" disabled={addLoading} className="rounded-lg bg-[#502D55] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#5a3256] disabled:opacity-70 flex items-center gap-2">
-                    {addLoading ? <Loader2 className="animate-spin" size={16} /> : null}Add Employee
+                <div className="flex justify-end gap-3 pt-6 mt-4 border-t border-gray-100">
+                  <button type="button" onClick={() => { setShowAddModal(false); setMonthWage(''); }} className="rounded-lg bg-gray-50 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors">Cancel</button>
+                  <button type="submit" disabled={addLoading} className="rounded-lg bg-[#502D55] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#5a3256] disabled:opacity-70 transition-colors flex items-center gap-2 shadow-md shadow-[#502D55]/20">
+                    {addLoading ? <Loader2 className="animate-spin" size={16} /> : null}Create Employee
                   </button>
                 </div>
               </form>

@@ -1,0 +1,12 @@
+{
+  "pages": {},
+  "app": {
+    "[project]/app/(app)/attendance/page": [
+      "static/media/31a9145ccb84606d-s.p.fa7e779d.woff2",
+      "static/media/99e609270109b47d-s.p.64b9304e.woff2",
+      "static/media/effe91970fc4db64-s.p.19510058.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pagesUsingSizeAdjust": false
+}

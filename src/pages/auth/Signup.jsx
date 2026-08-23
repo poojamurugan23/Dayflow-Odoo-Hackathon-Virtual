@@ -103,7 +103,7 @@ export function Signup() {
       <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-20 overflow-y-auto bg-white shadow-2xl z-10">
         <div className="mx-auto w-full max-w-md">
           <div className="mb-10">
-            <h2 className="font-serif text-4xl font-bold text-[#502D55] tracking-tight">Create Account</h2>
+            <h2 className="font-serif text-4xl font-bold text-[#502D55] tracking-tight">Sign Up</h2>
             <p className="mt-3 text-gray-500 text-lg">Register your organization as an Admin.</p>
           </div>
 
@@ -226,7 +226,7 @@ export function Signup() {
                 disabled={loading}
                 className="flex w-full justify-center rounded-lg bg-[#502D55] py-3.5 text-sm font-bold text-white shadow-md hover:bg-[#935073] focus:outline-none focus:ring-2 focus:ring-[#502D55] focus:ring-offset-2 disabled:opacity-70 transition-all hover:shadow-lg items-center"
               >
-                {loading ? <Loader2 className="animate-spin" size={20} /> : 'Create Account'}
+                {loading ? <Loader2 className="animate-spin" size={20} /> : 'Sign Up'}
               </button>
             </div>
           </form>
@@ -234,7 +234,7 @@ export function Signup() {
           <p className="mt-10 text-center text-sm font-medium text-gray-500">
             Already have an account?{' '}
             <Link to="/login" className="text-[#935073] hover:text-[#502D55] font-semibold underline underline-offset-4 transition-colors">
-              Sign in instead
+              Sign In
             </Link>
           </p>
         </div>
