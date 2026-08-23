@@ -32,6 +32,18 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'DayFlow Backend is running!' });
 });
 
+// Trigger Seed endpoint (temporary for hackathon deployment)
+app.get('/api/trigger-seed', (req, res) => {
+  const { exec } = require('child_process');
+  exec('node seed.js', { cwd: __dirname }, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`exec error: ${error}`);
+      return res.status(500).send(`Error running seed: ${error.message}`);
+    }
+    res.send(`Seed script executed successfully! <br><pre>${stdout}</pre>`);
+  });
+});
+
 
 
 // Start Server
