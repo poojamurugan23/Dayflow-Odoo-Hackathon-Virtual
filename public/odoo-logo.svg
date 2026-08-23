@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 150" role="img" aria-label="odoo">
+  <!-- The odoo wordmark: o-d-o-o. The leading "o" carries the brand mauve; the
+       rest are neutral grey. The "d" is a ring with an ascender tangent to its
+       right edge. -->
+  <g fill="none" stroke-width="26" stroke-linecap="round">
+    <circle cx="66"  cy="94" r="40" stroke="#9C5789" />
+    <circle cx="208" cy="94" r="40" stroke="#888888" />
+    <path d="M248 94 V 20" stroke="#888888" />
+    <circle cx="350" cy="94" r="40" stroke="#888888" />
+    <circle cx="492" cy="94" r="40" stroke="#888888" />
+  </g>
+</svg>
