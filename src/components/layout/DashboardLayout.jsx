@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import API_BASE from '../../lib/api';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -19,7 +20,7 @@ export function DashboardLayout({ children, role }) {
     try {
       const token = localStorage.getItem('dayflow_token');
       if (!token) return;
-      const res = await fetch('http://localhost:5000/api/data/notifications', {
+      const res = await fetch(`${API_BASE}/api/data/notifications`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -43,7 +44,7 @@ export function DashboardLayout({ children, role }) {
   const handleMarkAsRead = async (id) => {
     try {
       const token = localStorage.getItem('dayflow_token');
-      await fetch(`http://localhost:5000/api/data/notifications/${id}/read`, {
+      await fetch(`${API_BASE}/api/data/notifications/${id}/read`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}` }
       });

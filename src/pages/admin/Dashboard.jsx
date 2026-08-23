@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import API_BASE from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { Users, UserCheck, UserMinus, FileClock, ArrowRight, Clock, LogIn, LogOut } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -41,7 +42,7 @@ export function AdminDashboard() {
       if (!token) return;
 
       // Fetch overview metrics
-      const resMetrics = await fetch('http://localhost:5000/api/data/reports', {
+      const resMetrics = await fetch(`${API_BASE}/api/data/reports`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resMetrics.ok) {
@@ -50,7 +51,7 @@ export function AdminDashboard() {
       }
 
       // Fetch pending leaves
-      const resLeaves = await fetch('http://localhost:5000/api/data/timeoff', {
+      const resLeaves = await fetch(`${API_BASE}/api/data/timeoff`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resLeaves.ok) {
@@ -60,7 +61,7 @@ export function AdminDashboard() {
 
       // Fetch my attendance today (Admin sees all, filter for self)
       const dateStr = new Date().toISOString().split('T')[0];
-      const resAtt = await fetch(`http://localhost:5000/api/data/attendance?date=${dateStr}`, {
+      const resAtt = await fetch(`${API_BASE}/api/data/attendance?date=${dateStr}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resAtt.ok) {
@@ -87,7 +88,7 @@ export function AdminDashboard() {
   const handleCheckInOut = async (type) => {
     try {
       const token = localStorage.getItem('dayflow_token');
-      const res = await fetch(`http://localhost:5000/api/data/attendance/${type}`, {
+      const res = await fetch(`${API_BASE}/api/data/attendance/${type}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });

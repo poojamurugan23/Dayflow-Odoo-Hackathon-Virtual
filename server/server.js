@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -31,7 +32,20 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'DayFlow Backend is running!' });
 });
 
+// --- Production: Serve Frontend ---
+// In production (Railway), the built React app is placed in ../dist
+// The server serves it as static files and handles SPA routing
+if (process.env.NODE_ENV === 'production') {
+  const distPath = path.join(__dirname, '..', 'dist');
+  app.use(express.static(distPath));
+
+  // For any route that is NOT an API route, serve index.html (SPA routing)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
+
 // Start Server
 app.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
 });

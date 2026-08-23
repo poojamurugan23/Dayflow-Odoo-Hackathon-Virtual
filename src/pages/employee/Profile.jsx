@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import API_BASE from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { Mail, Phone, MapPin, Briefcase, Calendar as CalendarIcon, Shield, Building, UserCheck, Edit3, Plus, CheckCircle, Lock, Eye, EyeOff, Loader2, Save } from 'lucide-react';
 import DatePicker from 'react-datepicker';
@@ -86,7 +87,7 @@ export function EmployeeProfile() {
     setSaveLoading(true);
     try {
       const token = localStorage.getItem('dayflow_token');
-      const res = await fetch('http://localhost:5000/api/data/profile', {
+      const res = await fetch(`${API_BASE}/api/data/profile`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -785,7 +786,7 @@ export function EmployeeProfile() {
               setChangePwLoading(true);
               try {
                 const token = localStorage.getItem('dayflow_token');
-                const res = await fetch('http://localhost:5000/api/auth/change-password', {
+                const res = await fetch(`${API_BASE}/api/auth/change-password`, {
                   method: 'PUT',
                   headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                   body: JSON.stringify({ currentPassword, newPassword })

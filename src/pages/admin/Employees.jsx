@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import API_BASE from '../../lib/api';
 import { DEPARTMENTS, formatDate } from '../../lib/mockData';
 import { Search, Plus, LayoutGrid, List, Eye, Edit3, X, Loader2, ChevronDown, ChevronUp, Mail, Phone, Briefcase, FileText, Download } from 'lucide-react';
 import { EmployeeProfileModal } from '../../components/EmployeeProfileModal';
@@ -131,7 +132,7 @@ export function AdminEmployees() {
   const fetchEmployees = async () => {
     try {
       const token = localStorage.getItem('dayflow_token');
-      const response = await fetch('http://localhost:5000/api/data/employees', {
+      const response = await fetch(`${API_BASE}/api/data/employees`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -176,7 +177,7 @@ export function AdminEmployees() {
       const userStr = localStorage.getItem('dayflow_user');
       const adminUser = userStr ? JSON.parse(userStr) : null;
 
-      const response = await fetch('http://localhost:5000/api/data/employees', {
+      const response = await fetch(`${API_BASE}/api/data/employees`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

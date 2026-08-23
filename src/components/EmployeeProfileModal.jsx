@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import API_BASE from '../lib/api';
 import { X, Save, Edit3, Loader2, Download, Printer } from 'lucide-react';
 import { formatDate } from '../lib/mockData';
 
@@ -21,7 +22,7 @@ export function EmployeeProfileModal({ employee, onClose, isHrView = false, refr
     setLoading(true);
     try {
       const token = localStorage.getItem('dayflow_token');
-      const response = await fetch(`http://localhost:5000/api/data/employees/${employee.id || employee._id}`, {
+      const response = await fetch(`${API_BASE}/api/data/employees/${employee.id || employee._id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

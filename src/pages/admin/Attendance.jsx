@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import API_BASE from '../../lib/api';
 import { Search, ChevronLeft, ChevronRight, Loader2, Clock } from 'lucide-react';
 
 export function AdminAttendance() {
@@ -25,7 +26,7 @@ export function AdminAttendance() {
     setLoading(true);
     try {
       const token = localStorage.getItem('dayflow_token');
-      const response = await fetch(`http://localhost:5000/api/data/attendance?date=${formatDateParam(selectedDate)}`, {
+      const response = await fetch(`${API_BASE}/api/data/attendance?date=${formatDateParam(selectedDate)}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {

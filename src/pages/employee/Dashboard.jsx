@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import API_BASE from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   CheckCircle, LogIn, LogOut as LogOutIcon, Plane, X,
@@ -71,7 +72,7 @@ export function EmployeeDashboard() {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/data/employees', {
+      const res = await fetch(`${API_BASE}/api/data/employees`, {
         headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       if (res.ok) {
@@ -103,7 +104,7 @@ export function EmployeeDashboard() {
   /* Check today's attendance status on mount */
   const fetchTodayAttendance = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/data/attendance', {
+      const res = await fetch(`${API_BASE}/api/data/attendance`, {
         headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       if (res.ok) {
@@ -135,7 +136,7 @@ export function EmployeeDashboard() {
     if (checkedIn) return;
     setCiLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/data/attendance/check-in', {
+      const res = await fetch(`${API_BASE}/api/data/attendance/check-in`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' }
       });
@@ -161,7 +162,7 @@ export function EmployeeDashboard() {
     if (!checkedIn) return;
     setCiLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/data/attendance/check-out', {
+      const res = await fetch(`${API_BASE}/api/data/attendance/check-out`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' }
       });

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import API_BASE from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Clock, CheckCircle, XCircle, X, Loader2, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -28,7 +29,7 @@ export function EmployeeTimeOff() {
   const fetchLeaves = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/data/timeoff', {
+      const res = await fetch(`${API_BASE}/api/data/timeoff`, {
         headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       if (res.ok) setLeaves(await res.json());
@@ -60,7 +61,7 @@ export function EmployeeTimeOff() {
     setSubmitting(true);
 
     try {
-      const res = await fetch('http://localhost:5000/api/data/timeoff', {
+      const res = await fetch(`${API_BASE}/api/data/timeoff`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({

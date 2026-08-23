@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import API_BASE from '../lib/api';
 
 const AuthContext = createContext(null);
 
-const BACKEND_URL = 'http://localhost:5000/api/auth';
+const BACKEND_URL = `${API_BASE}/api/auth`;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);

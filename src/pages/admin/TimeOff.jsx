@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import API_BASE from '../../lib/api';
 import { Check, X, Search, Plus, Calendar, Loader2, CheckCircle, Clock, XCircle } from 'lucide-react';
 
 const LEAVE_TYPES = ['Paid time off', 'Sick Leave', 'Unpaid Leaves'];
@@ -39,8 +40,8 @@ export function AdminTimeOff() {
     setLoading(true);
     try {
       const [leaveRes, empRes] = await Promise.all([
-        fetch('http://localhost:5000/api/data/timeoff', { headers: { 'Authorization': `Bearer ${getToken()}` } }),
-        fetch('http://localhost:5000/api/data/employees', { headers: { 'Authorization': `Bearer ${getToken()}` } })
+        fetch(`${API_BASE}/api/data/timeoff`, { headers: { 'Authorization': `Bearer ${getToken()}` } }),
+        fetch(`${API_BASE}/api/data/employees`, { headers: { 'Authorization': `Bearer ${getToken()}` } })
       ]);
       if (leaveRes.ok) setLeaves(await leaveRes.json());
       if (empRes.ok) {
@@ -63,7 +64,7 @@ export function AdminTimeOff() {
   // ── Approve / Reject ─────────────────────────────────────
   const handleUpdateStatus = async (id, status, comment = '') => {
     try {
-      const res = await fetch(`http://localhost:5000/api/data/timeoff/${id}/status`, {
+      const res = await fetch(`${API_BASE}/api/data/timeoff/${id}/status`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, review_comment: comment })
@@ -86,7 +87,7 @@ export function AdminTimeOff() {
   const handleRemove = async (id) => {
     if (!window.confirm('Remove this time off record?')) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/data/timeoff/${id}`, {
+      const res = await fetch(`${API_BASE}/api/data/timeoff/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${getToken()}` }
       });
@@ -103,7 +104,7 @@ export function AdminTimeOff() {
     }
     setNewLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/data/timeoff', {
+      const res = await fetch(`${API_BASE}/api/data/timeoff`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
