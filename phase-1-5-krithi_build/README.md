@@ -161,7 +161,6 @@ phases have a home.
 ## Reference documents
 
 - `dayflow-build-plan.md` — the authoritative SQL (Parts 1–3)
-- `dayflow-claude-design-prompts.md` — screen-by-screen design intent
 - `Dayflow - Human Resource Management System.pdf` — original SRS
 
 The master plan (`dayflow-master-plan.md`, kept outside this repo) supersedes
