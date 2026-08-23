@@ -27,6 +27,11 @@ function rawString(value: FormDataEntryValue | null): string {
 // admin, turns one missing check into privilege escalation; role changes need
 // their own audited flow, not a general profile save.
 // ---------------------------------------------------------------------------
+const RESUME_FIELDS = ["about", "job_love", "interests", "skills", "certifications"] as const;
+
+/** Stored as text[]; the form sends them comma-separated. */
+const ARRAY_FIELDS = new Set<string>(["skills", "certifications"]);
+
 const MANAGER_PROFILE_FIELDS = [
   "full_name",
   "email",
@@ -37,10 +42,17 @@ const MANAGER_PROFILE_FIELDS = [
   "employee_code",
   "manager_id",
   "date_of_joining",
+  ...RESUME_FIELDS,
 ] as const;
 
-/** An employee may edit only these on their own profile (SRS 3.3.2). */
-const SELF_PROFILE_FIELDS = ["phone"] as const;
+/**
+ * SRS 3.3.2 limits an employee to address, phone and picture. The resume
+ * fields are added on top of that, deliberately: "About", "What I love about my
+ * job" and "My interests" are first-person writing, and a bio composed by HR on
+ * someone's behalf is not a feature. Bank and job details stay HR-only.
+ * To revert to the letter of the SRS, drop ...RESUME_FIELDS from this list.
+ */
+const SELF_PROFILE_FIELDS = ["phone", ...RESUME_FIELDS] as const;
 
 const MANAGER_PRIVATE_FIELDS = [
   "dob",
@@ -298,14 +310,38 @@ export async function updateEmployee(_prev: EditState, formData: FormData): Prom
   }
 
   if (Object.keys(privatePatch).length > 0) {
-    // private_info DOES have an owner-or-manager policy, so this write goes
-    // through the caller's own client and RLS re-checks the row. Defence in
-    // depth: if the check above were ever wrong, Postgres still refuses.
-    const supabase = await createClient();
-    const { error } = await supabase
-      .from("private_info")
-      .upsert({ profile_id: targetId, ...privatePatch }, { onConflict: "profile_id" });
-    if (error) return { error: "Could not save personal details. Try again.", saved: false };
+    if (actor.isManager) {
+      // Migration 0003 revoked INSERT/UPDATE on private_info from
+      // `authenticated`, so even a manager cannot write it through their own
+      // session. That is the point: the direct-API path is closed for everyone
+      // and bank changes only happen through this authorised action.
+      const { error } = await admin
+        .from("private_info")
+        .upsert({ profile_id: targetId, ...privatePatch }, { onConflict: "profile_id" });
+      if (error) return { error: "Could not save personal details. Try again.", saved: false };
+    } else {
+      // The owner keeps their own client on purpose. 0003 grants
+      // `authenticated` UPDATE on residing_address and nothing else, and the
+      // RLS policy pins it to their own row — so even if the allowlist above
+      // were wrong, Postgres would still refuse a bank column.
+      const supabase = await createClient();
+      const { data: touched, error } = await supabase
+        .from("private_info")
+        .update(privatePatch)
+        .eq("profile_id", targetId)
+        .select("profile_id");
+
+      if (error) return { error: "Could not save personal details. Try again.", saved: false };
+
+      if (!touched?.length) {
+        // No row yet. One is created with every employee, so this is a repair
+        // path rather than a normal one, and it needs the service role.
+        const { error: backfill } = await admin
+          .from("private_info")
+          .upsert({ profile_id: targetId, ...privatePatch }, { onConflict: "profile_id" });
+        if (backfill) return { error: "Could not save personal details. Try again.", saved: false };
+      }
+    }
   }
 
   if (Object.keys(profilePatch).length === 0 && Object.keys(privatePatch).length === 0) {
@@ -327,11 +363,24 @@ export async function updateEmployee(_prev: EditState, formData: FormData): Prom
 }
 
 /** Pull only allowlisted keys out of the form, normalising "" to null. */
-function collect(formData: FormData, allowed: readonly string[]): Record<string, string | null> {
-  const patch: Record<string, string | null> = {};
+function collect(
+  formData: FormData,
+  allowed: readonly string[],
+): Record<string, string | string[] | null> {
+  const patch: Record<string, string | string[] | null> = {};
   for (const field of allowed) {
     if (!formData.has(field)) continue;
     const value = rawString(formData.get(field)).trim();
+
+    if (ARRAY_FIELDS.has(field)) {
+      // Comma-separated in, text[] out. Empty means an empty array, not null,
+      // because the columns are NOT NULL DEFAULT '{}'.
+      patch[field] = value
+        ? value.split(",").map((part) => part.trim()).filter(Boolean)
+        : [];
+      continue;
+    }
+
     patch[field] = value === "" ? null : value;
   }
   return patch;

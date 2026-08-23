@@ -98,6 +98,8 @@ export function EditProfileForm({ employee, info, canEditAll, managers, onDone }
             <Text name="pan_no" label="PAN number" defaultValue={info?.panNo ?? ""} />
             <Text name="uan_no" label="UAN number" defaultValue={info?.uanNo ?? ""} />
           </Group>
+
+      
         </>
       ) : (
         <Group title="Your details">
@@ -118,6 +120,34 @@ export function EditProfileForm({ employee, info, canEditAll, managers, onDone }
           </p>
         </Group>
       )}
+
+      {/* Resume sections (SRS 3.3.1). Skills and certifications are text[] in
+          Postgres; the form takes them comma-separated and the action splits. */}
+      <Group title="Resume">
+        <div className="sm:col-span-2">
+          <Label htmlFor="about">About</Label>
+          <Textarea id="about" name="about" rows={3} defaultValue={employee.about ?? ""} className="mt-1.5" />
+        </div>
+        <div className="sm:col-span-2">
+          <Label htmlFor="job_love">What I love about my job</Label>
+          <Textarea id="job_love" name="job_love" rows={2} defaultValue={employee.jobLove ?? ""} className="mt-1.5" />
+        </div>
+        <div className="sm:col-span-2">
+          <Label htmlFor="interests">My interests and hobbies</Label>
+          <Textarea id="interests" name="interests" rows={2} defaultValue={employee.interests ?? ""} className="mt-1.5" />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="skills">Skills</Label>
+          <Input id="skills" name="skills" defaultValue={employee.skills.join(", ")} placeholder="React, PostgreSQL, Go" />
+          <p className="text-xs text-muted-foreground">Separate with commas.</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="certifications">Certification</Label>
+          <Input id="certifications" name="certifications" defaultValue={employee.certifications.join(", ")} placeholder="AWS SAA, CKA" />
+          <p className="text-xs text-muted-foreground">Separate with commas.</p>
+        </div>
+      </Group>
+
 
       <FormError message={state.error} />
 

@@ -61,6 +61,12 @@ export type EmployeeDetail = {
   managerId: string | null;
   managerName: string | null;
   companyName: string | null;
+  /** Resume tab content (SRS 3.3.1), added in migration 0003. */
+  about: string | null;
+  jobLove: string | null;
+  interests: string | null;
+  skills: string[];
+  certifications: string[];
 };
 
 export type PrivateInfo = {
@@ -90,29 +96,55 @@ type DetailRow = {
   avatar_url: string | null;
   date_of_joining: string;
   manager_id: string | null;
+  about?: string | null;
+  job_love?: string | null;
+  interests?: string | null;
+  skills?: string[] | null;
+  certifications?: string[] | null;
   organizations: { name: string } | null;
 };
 
 /**
- * One employee, or null when RLS hides them — which is exactly what happens
- * when one employee asks for another employee's id. Callers render a
- * not-authorised state for null rather than treating it as a crash.
+ * Result of an employee fetch. `forbidden` and `failed` are deliberately
+ * different: RLS returning no row is a permission answer, while a broken query
+ * is a bug. Collapsing both into null once made a missing column render as
+ * "you can't view this profile", which sent me looking in the wrong place.
  */
-export async function getEmployee(id: string): Promise<EmployeeDetail | null> {
+export type EmployeeResult =
+  | { kind: "ok"; employee: EmployeeDetail }
+  | { kind: "forbidden" }
+  | { kind: "failed"; message: string };
+
+const BASE_COLUMNS =
+  "id, full_name, login_id, employee_code, email, phone, job_position, department, location, avatar_url, date_of_joining, manager_id, organizations(name)";
+const RESUME_COLUMNS = "about, job_love, interests, skills, certifications";
+
+export async function getEmployee(id: string): Promise<EmployeeResult> {
   const supabase = await createClient();
 
-  const { data } = await supabase
+  let { data, error } = await supabase
     .from("profiles")
-    .select(
-      "id, full_name, login_id, employee_code, email, phone, job_position, department, location, avatar_url, date_of_joining, manager_id, organizations(name)",
-    )
+    .select(`${BASE_COLUMNS}, ${RESUME_COLUMNS}`)
     .eq("id", id)
     .maybeSingle();
+
+  // 42703 = undefined_column. Migration 0003 adds the resume fields; until it
+  // has been applied everywhere, fall back so the profile still renders instead
+  // of failing whole. Safe to delete once 0003 is applied in every environment.
+  if (error?.code === "42703") {
+    ({ data, error } = await supabase
+      .from("profiles")
+      .select(BASE_COLUMNS)
+      .eq("id", id)
+      .maybeSingle());
+  }
+
+  if (error) return { kind: "failed", message: error.message };
 
   // Cast: without generated database types supabase-js cannot infer the shape
   // of the embedded `organizations` relation. The select list is the contract.
   const row = data as DetailRow | null;
-  if (!row) return null;
+  if (!row) return { kind: "forbidden" };
 
   let managerName: string | null = null;
   if (row.manager_id) {
@@ -125,20 +157,28 @@ export async function getEmployee(id: string): Promise<EmployeeDetail | null> {
   }
 
   return {
-    id: row.id,
-    fullName: row.full_name,
-    loginId: row.login_id,
-    employeeCode: row.employee_code,
-    email: row.email,
-    phone: row.phone,
-    jobPosition: row.job_position,
-    department: row.department,
-    location: row.location,
-    avatarUrl: row.avatar_url,
-    dateOfJoining: row.date_of_joining,
-    managerId: row.manager_id,
-    managerName,
-    companyName: row.organizations?.name ?? null,
+    kind: "ok",
+    employee: {
+      id: row.id,
+      fullName: row.full_name,
+      loginId: row.login_id,
+      employeeCode: row.employee_code,
+      email: row.email,
+      phone: row.phone,
+      jobPosition: row.job_position,
+      department: row.department,
+      location: row.location,
+      avatarUrl: row.avatar_url,
+      dateOfJoining: row.date_of_joining,
+      managerId: row.manager_id,
+      managerName,
+      companyName: row.organizations?.name ?? null,
+      about: row.about ?? null,
+      jobLove: row.job_love ?? null,
+      interests: row.interests ?? null,
+      skills: row.skills ?? [],
+      certifications: row.certifications ?? [],
+    },
   };
 }
 

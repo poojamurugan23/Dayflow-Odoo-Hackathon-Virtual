@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ChevronLeft, ShieldOff } from "lucide-react";
+import { ChevronLeft, ShieldOff, TriangleAlert } from "lucide-react";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getTodayStatuses } from "@/lib/attendance";
@@ -38,13 +38,17 @@ export default async function EmployeeProfilePage({
 }
 
 async function Profile({ id }: { id: string }) {
-  const [user, employee] = await Promise.all([getCurrentUser(), getEmployee(id)]);
+  const [user, result] = await Promise.all([getCurrentUser(), getEmployee(id)]);
 
-  // RLS returns nothing when one employee asks for another employee's id. That
-  // is a permission answer, not a failure, so it gets a state of its own rather
-  // than a 404 or a crash.
-  if (!employee || !user) return <NotAuthorised />;
+  if (!user) return <NotAuthorised />;
 
+  // A permission answer and a broken query are different problems and get
+  // different screens. Conflating them hides real bugs behind a plausible
+  // "you can't see this" message.
+  if (result.kind === "forbidden") return <NotAuthorised />;
+  if (result.kind === "failed") return <LoadFailed message={result.message} />;
+
+  const employee = result.employee;
   const isSelf = user.id === employee.id;
 
   const [info, todayStatuses, managers] = await Promise.all([
@@ -62,6 +66,27 @@ async function Profile({ id }: { id: string }) {
       isManager={user.isManager}
       managers={managers}
     />
+  );
+}
+
+function LoadFailed({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center rounded-lg border border-dashed border-destructive/40 px-6 py-16 text-center">
+      <TriangleAlert className="size-8 text-destructive/70" aria-hidden />
+      <h1 className="mt-4 text-sm font-medium text-foreground">Couldn&apos;t load this profile</h1>
+      <p className="mt-1 max-w-md text-sm text-muted-foreground">
+        This is a fault on our side, not a permission problem.
+      </p>
+      <code className="mt-3 max-w-md break-words rounded bg-muted px-2 py-1 font-mono text-[11px] text-muted-foreground">
+        {message}
+      </code>
+      <Link
+        href="/employees"
+        className="mt-5 text-sm font-medium text-foreground underline-offset-4 hover:underline"
+      >
+        Back to employees
+      </Link>
+    </div>
   );
 }
 

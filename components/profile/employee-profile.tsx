@@ -110,7 +110,7 @@ export function EmployeeProfile({
             </TabsList>
 
             <TabsContent value="resume" className="mt-6">
-              <ResumeTab fullName={employee.fullName} />
+              <ResumeTab employee={employee} canEdit={canEdit} isSelf={isSelf} />
             </TabsContent>
 
             <TabsContent value="private" className="mt-6">
