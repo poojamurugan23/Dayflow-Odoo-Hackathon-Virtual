@@ -45,7 +45,7 @@ router.get('/seed-mock-realtime', async (req, res) => {
             department: emp.department,
             position: emp.position,
             company_name: 'Odoo India',
-            login_id: \`OI\${emp.name.substring(0,2).toUpperCase()}202600\${Math.floor(Math.random() * 100)}\`,
+            login_id: `OI${emp.name.substring(0,2).toUpperCase()}202600${Math.floor(Math.random() * 100)}`,
             status: 'Active',
             joining_date: new Date(new Date().setMonth(new Date().getMonth() - Math.floor(Math.random() * 12)))
           });
