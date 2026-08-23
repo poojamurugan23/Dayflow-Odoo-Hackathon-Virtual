@@ -1,19 +1,21 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { PhaseStub } from "@/components/phase-stub";
-
-export const metadata: Metadata = { title: "My Profile · Dayflow" };
+import { getCurrentUser } from "@/lib/auth";
 
 /**
- * Stub so the avatar dropdown's "My Profile" item is not a dead link.
- * Phase 2 builds the real profile with the Resume and Private Info tabs.
+ * "My Profile" from the avatar menu.
+ *
+ * This redirects to the employee profile route rather than rendering its own
+ * copy. The profile shell already resolves `isSelf` and `isAdmin` and decides
+ * which tabs a viewer gets, so a second implementation would be a second place
+ * for those rules to be got wrong — and Phase 5 adds salary to exactly those
+ * rules. One route, one permission boundary.
+ *
+ * The Phase 2 stub that used to live here was never replaced, so until now the
+ * avatar menu's "My Profile" led to a placeholder.
  */
-export default function ProfilePage() {
-  return (
-    <PhaseStub
-      title="My Profile"
-      description="Resume, Private Info, and the read-only field rules arrive in Phase 2."
-      phase="Phase 2"
-    />
-  );
+export default async function ProfilePage() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/sign-in");
+  redirect(`/employees/${user.id}`);
 }

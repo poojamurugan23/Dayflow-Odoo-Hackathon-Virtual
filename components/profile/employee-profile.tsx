@@ -10,6 +10,7 @@ import { EditProfileForm } from "@/components/profile/edit-profile-form";
 import { FieldRow } from "@/components/profile/field-row";
 import { PrivateInfoTab } from "@/components/profile/private-info-tab";
 import { ResumeTab } from "@/components/profile/resume-tab";
+import { SalaryTab, type SalaryTabData } from "@/components/salary/salary-tab";
 import { StatusBadge } from "@/components/status-dot";
 import { formatDate, type DayStatus } from "@/lib/display";
 import type { EmployeeDetail, PrivateInfo } from "@/lib/employees";
@@ -23,6 +24,15 @@ type Props = {
   isSelf: boolean;
   isManager: boolean;
   managers: { id: string; label: string }[];
+  /**
+   * Salary, or null when the caller may not see it. The page only fetches this
+   * when the viewer is the owner or an admin, so a non-admin looking at someone
+   * else's profile never receives salary data in its payload at all — the tab is
+   * not merely hidden, the figures are absent.
+   */
+  salary: SalaryTabData | null;
+  /** Admin: may edit any wage. Narrower than isManager, which includes HR. */
+  isAdmin: boolean;
 };
 
 /**
@@ -37,11 +47,17 @@ export function EmployeeProfile({
   isSelf,
   isManager,
   managers,
+  salary,
+  isAdmin,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const stopEditing = useCallback(() => setEditing(false), []);
 
   const canEdit = isManager || isSelf;
+  // Master plan Part 5: Salary Info is admin-only, with the stated exception
+  // that an employee may see their OWN, read-only. So the tab appears for an
+  // admin on anyone's profile and for anybody on their own — and nowhere else.
+  const canSeeSalary = isAdmin || isSelf;
   const canEditAll = isManager;
   // The owner may see their own bank details but not change them; only HR can.
   const bankEditable = isManager;
@@ -105,11 +121,11 @@ export function EmployeeProfile({
             <TabsList>
               <TabsTrigger value="resume">Resume</TabsTrigger>
               <TabsTrigger value="private">Private Info</TabsTrigger>
-              {/* Visible so the tab bar is complete, but inert until Phase 5.
-                  No salary data is sent to the client from this page. */}
-              <TabsTrigger value="salary" disabled title="Salary Info arrives in Phase 5">
-                Salary Info
-              </TabsTrigger>
+              {/* Rendered only when the viewer may actually see the figures.
+                  Left out entirely rather than disabled: a disabled tab on
+                  someone else's profile advertises that there is something
+                  there to see. */}
+              {canSeeSalary && <TabsTrigger value="salary">Salary Info</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="resume" className="mt-6">
@@ -125,6 +141,12 @@ export function EmployeeProfile({
                 bankEditable={bankEditable}
               />
             </TabsContent>
+
+            {canSeeSalary && (
+              <TabsContent value="salary" className="mt-6">
+                <SalaryTab data={salary} canEdit={isAdmin} isSelf={isSelf} />
+              </TabsContent>
+            )}
           </Tabs>
 
           <p className="mt-8 text-xs text-muted-foreground">

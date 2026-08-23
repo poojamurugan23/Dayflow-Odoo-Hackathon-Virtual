@@ -55,3 +55,17 @@ export const EMPTY_LEAVE_REQUEST_STATE: LeaveRequestState = {
 export type LeaveDecisionState = { error: string | null; decided: boolean };
 
 export const EMPTY_LEAVE_DECISION_STATE: LeaveDecisionState = { error: null, decided: false };
+
+/**
+ * Result of changing an employee's monthly wage.
+ *
+ * `effectiveFrom` comes back so the tab can say which date the new structure
+ * starts from without guessing — the action decides that, not the client.
+ */
+export type WageState = {
+  error: string | null;
+  saved: boolean;
+  effectiveFrom?: string;
+};
+
+export const EMPTY_WAGE_STATE: WageState = { error: null, saved: false };

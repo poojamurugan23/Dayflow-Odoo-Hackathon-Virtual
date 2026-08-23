@@ -188,5 +188,6 @@ Run in order, in the Supabase SQL editor:
 | `0003_resume_fields_and_bank_lockdown.sql` | Resume columns; column-level grants so an employee cannot change their own bank details through the API. |
 | `0004_fix_daily_attendance_grouping.sql` | Drops `a.punch_in` from `v_daily_attendance`'s GROUP BY, so a lunch break stops splitting one day into two half-days. |
 | `0005_notifications_and_leave_integrity.sql` | `notifications` table; closes three ways an employee could grant themselves leave through the API (insert an already-approved request, understate the day count, hold overlapping requests); stops anyone — HR included — approving their own leave. |
+| `0006_salary_visibility.sql` | Lets an employee read their own salary; keeps everyone else out, including HR. Splits 0002's `for all` policy by command — widening it would have let an employee DELETE their own salary history. Revokes every write grant so the only path to a wage change is the audited server action, and adds a unique index guaranteeing one open structure per person. |
 
 Then `npm run setup:storage` for the `avatars` and `leave-documents` buckets.

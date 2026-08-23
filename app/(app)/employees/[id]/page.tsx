@@ -6,6 +6,9 @@ import { ChevronLeft, ShieldOff, TriangleAlert } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { getOpenPunch, getTodayStatuses } from "@/lib/attendance";
 import { getEmployee, getPrivateInfo, listManagerOptions } from "@/lib/employees";
+import { getCurrentSalary, getPayableDays, getSalaryHistory, getStatutoryConfig } from "@/lib/payroll";
+import { monthLabel, monthStartOf, todayIST } from "@/lib/attendance";
+import type { SalaryTabData } from "@/components/salary/salary-tab";
 import { EmployeeProfile } from "@/components/profile/employee-profile";
 import { ProfileSkeleton } from "@/components/profile/profile-skeleton";
 
@@ -50,14 +53,20 @@ async function Profile({ id }: { id: string }) {
 
   const employee = result.employee;
   const isSelf = user.id === employee.id;
+  const isAdmin = user.role === "admin";
 
-  const [info, todayStatuses, managers, openPunch] = await Promise.all([
+  const [info, todayStatuses, managers, openPunch, salary] = await Promise.all([
     getPrivateInfo(employee.id),
     getTodayStatuses(),
     user.isManager ? listManagerOptions() : Promise.resolve([]),
     // RLS lets you read your own punches, and a manager read anyone's, so this
     // is the same permission boundary as the rest of the page.
     getOpenPunch(employee.id),
+    // Fetched ONLY when the viewer is entitled to it. An HR officer viewing
+    // someone else's profile gets null here, so no wage ever reaches their
+    // browser — the tab being absent is a consequence, not the control. RLS is
+    // the backstop: after 0006 the SELECT policy would return no rows anyway.
+    isAdmin || isSelf ? loadSalary(employee.id) : Promise.resolve(null),
   ]);
 
   return (
@@ -69,8 +78,44 @@ async function Profile({ id }: { id: string }) {
       isSelf={isSelf}
       isManager={user.isManager}
       managers={managers}
+      salary={salary}
+      isAdmin={isAdmin}
     />
   );
+}
+
+/**
+ * Everything the Salary Info tab needs, in one place so both this route and
+ * /profile assemble it identically.
+ *
+ * Payable days are READ from v_payable_days — see lib/payroll.ts. The month
+ * label matches the window v_daily_attendance currently spans, so the strip
+ * never implies it covers more than it does.
+ */
+export async function loadSalary(profileId: string): Promise<SalaryTabData | null> {
+  const [structure, statutory, payable, history] = await Promise.all([
+    getCurrentSalary(profileId),
+    getStatutoryConfig(),
+    getPayableDays(profileId),
+    getSalaryHistory(profileId),
+  ]);
+
+  if (!structure) return null;
+
+  return {
+    profileId,
+    monthlyWage: structure.monthlyWage,
+    effectiveFrom: structure.effectiveFrom,
+    rules: structure.rules,
+    statutory,
+    payable,
+    month: monthLabel(monthStartOf(todayIST())),
+    history: history.map((row) => ({
+      effectiveFrom: row.effectiveFrom,
+      effectiveTo: row.effectiveTo,
+      monthlyWage: row.monthlyWage,
+    })),
+  };
 }
 
 function LoadFailed({ message }: { message: string }) {
