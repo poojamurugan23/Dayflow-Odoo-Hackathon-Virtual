@@ -18,6 +18,10 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      // A separate clone of the team repo sits inside this folder and now
+      // holds its own copy of the project. It is gitignored; keep it out of
+      // our lint too, so its files cannot fail our build.
+      "Dayflow-Odoo-Hackathon-Virtual/**",
     ],
   },
 ];
