@@ -3,7 +3,7 @@ import { DEPARTMENTS, formatDate } from '../../lib/mockData';
 import { Search, Plus, LayoutGrid, List, Eye, Edit3, X, Loader2, ChevronDown, ChevronUp, Mail, Phone, Briefcase, FileText, Download } from 'lucide-react';
 import { EmployeeProfileModal } from '../../components/EmployeeProfileModal';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 /* ── Salary auto-calc helper ──────────────────────────────── */
@@ -223,7 +223,7 @@ export function AdminEmployees() {
     const doc = new jsPDF();
     doc.text("Employees List", 14, 15);
     const tableData = employees.map(e => [e.employeeId, e.name, e.email, e.department, e.position, e.status]);
-    doc.autoTable({
+    autoTable(doc, {
       head: [['ID', 'Name', 'Email', 'Department', 'Position', 'Status']],
       body: tableData,
       startY: 20,
