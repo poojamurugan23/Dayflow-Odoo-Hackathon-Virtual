@@ -440,35 +440,35 @@ router.post('/payroll', authMiddleware, async (req, res) => {
 // GET /api/data/reports (Admin summary metrics)
 router.get('/reports', authMiddleware, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'hr') {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const totalEmployees = await User.countDocuments();
+    const totalEmployees = await User.countDocuments({ role: { $nin: ['admin', 'hr'] } });
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
+    const employeeUsers = await User.find({ role: { $nin: ['admin', 'hr'] } }).select('_id');
+    const employeeIds = employeeUsers.map(u => u._id);
+
     const presentToday = await Attendance.countDocuments({
       date: { $gte: today, $lt: tomorrow },
-      status: 'Present'
+      status: 'Present',
+      employee_id: { $in: employeeIds }
     });
 
-    const pendingLeaves = await LeaveRequest.countDocuments({ status: 'Pending' });
-    const approvedLeaves = await LeaveRequest.countDocuments({ status: 'Approved' });
-
-    const payrollTotal = await Payroll.aggregate([
-      { $group: { _id: null, total: { $sum: '$basic' } } }
-    ]);
+    const pendingLeaves = await LeaveRequest.countDocuments({ status: 'Pending', employee_id: { $in: employeeIds } });
+    const approvedLeaves = await LeaveRequest.countDocuments({ status: 'Approved', employee_id: { $in: employeeIds } });
 
     res.json({
       totalEmployees,
       presentToday,
       pendingLeaves,
       approvedLeaves,
-      totalBasicPayroll: payrollTotal[0]?.total || 0
+      totalBasicPayroll: 0
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

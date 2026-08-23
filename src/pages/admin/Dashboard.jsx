@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Users, UserCheck, UserMinus, FileClock, CreditCard, ArrowRight } from 'lucide-react';
+import { Users, UserCheck, UserMinus, FileClock, ArrowRight, Clock, LogIn, LogOut } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 
@@ -30,12 +30,10 @@ export function AdminDashboard() {
     presentToday: 0,
     pendingLeaves: 0,
     approvedLeaves: 0,
-    totalBasicPayroll: 0
   });
   
   const [pendingRequests, setPendingRequests] = useState([]);
-  const [hrProfiles, setHrProfiles] = useState([]);
-  const [employeeProfiles, setEmployeeProfiles] = useState([]);
+  const [myAttendance, setMyAttendance] = useState(null);
 
   const fetchDashboardData = async () => {
     try {
@@ -57,19 +55,18 @@ export function AdminDashboard() {
       });
       if (resLeaves.ok) {
         const data = await resLeaves.json();
-        setPendingRequests(data.filter(l => l.status === 'Pending').slice(0, 5)); // Show latest 5
+        setPendingRequests(data.filter(l => l.status === 'Pending').slice(0, 5));
       }
 
-      // Fetch employees for directory stack
-      const resEmp = await fetch('http://localhost:5000/api/data/employees', {
+      // Fetch my attendance today (Admin sees all, filter for self)
+      const dateStr = new Date().toISOString().split('T')[0];
+      const resAtt = await fetch(`http://localhost:5000/api/data/attendance?date=${dateStr}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (resEmp.ok) {
-        const data = await resEmp.json();
-        const hrs = data.filter(emp => emp.role === 'hr' || emp.role === 'admin');
-        const emps = data.filter(emp => emp.role !== 'hr' && emp.role !== 'admin');
-        setHrProfiles(hrs);
-        setEmployeeProfiles(emps.slice(0, 5)); // show latest 5
+      if (resAtt.ok) {
+        const attData = await resAtt.json();
+        const mine = attData.find(a => a.employee_id?._id === user?.id || a.employee_id === user?.id);
+        setMyAttendance(mine || null);
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data');
@@ -78,36 +75,85 @@ export function AdminDashboard() {
 
   useEffect(() => {
     fetchDashboardData();
-    // Poll every 5 seconds for real-time dashboard updates
     const interval = setInterval(fetchDashboardData, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const greeting = () => {
     const h = new Date().getHours();
     return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   };
 
-  const formatLakhs = (num) => {
-    if (num >= 100000) return `₹${(num / 100000).toFixed(1)}L`;
-    return `₹${num.toLocaleString('en-IN')}`;
+  const handleCheckInOut = async (type) => {
+    try {
+      const token = localStorage.getItem('dayflow_token');
+      const res = await fetch(`http://localhost:5000/api/data/attendance/${type}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        fetchDashboardData();
+      } else {
+        const err = await res.json();
+        alert(err.message || 'Error recording attendance');
+      }
+    } catch (err) {
+      alert('Network error');
+    }
+  };
+
+  const formatTime = (isoString) => {
+    if (!isoString) return '--:--';
+    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
     <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
-      <div>
-        <h1 className="font-serif text-2xl lg:text-3xl font-bold text-[#171923]">{greeting()}, {user?.name?.split(' ')[0]}</h1>
-        <p className="mt-1 text-sm text-[#6B7280]">Here's a real-time view of your workforce.</p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-2xl lg:text-3xl font-bold text-[#171923]">{greeting()}, {user?.name?.split(' ')[0]}</h1>
+          <p className="mt-1 text-sm text-[#6B7280]">Here's a real-time view of your workforce.</p>
+        </div>
+        
+        {/* HR Check-in / Check-out Widget */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-[#502D55]/10 flex items-center justify-center text-[#502D55]">
+              <Clock size={20} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Your Shift</p>
+              <p className="text-sm font-bold text-[#171923]">
+                {myAttendance?.check_in ? `${formatTime(myAttendance.check_in)} - ${myAttendance.check_out ? formatTime(myAttendance.check_out) : 'Ongoing'}` : 'Not started'}
+              </p>
+            </div>
+          </div>
+          <div className="h-8 w-px bg-gray-200 hidden sm:block"></div>
+          <div className="flex gap-2">
+            {!myAttendance?.check_in ? (
+              <button onClick={() => handleCheckInOut('check-in')} className="flex items-center gap-1.5 px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-lg transition-colors">
+                <LogIn size={16} /> Check In
+              </button>
+            ) : !myAttendance?.check_out ? (
+              <button onClick={() => handleCheckInOut('check-out')} className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors">
+                <LogOut size={16} /> Check Out
+              </button>
+            ) : (
+              <span className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-semibold rounded-lg flex items-center gap-1.5">
+                <UserCheck size={16} /> Completed
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Total Employees', value: metrics.totalEmployees.toString(), icon: Users, color: 'blue' },
           { label: 'Present Today', value: metrics.presentToday.toString(), icon: UserCheck, color: 'green' },
           { label: 'On Leave', value: metrics.approvedLeaves.toString(), icon: UserMinus, color: 'amber' },
-          { label: 'Pending Requests', value: String(metrics.pendingLeaves).padStart(2, '0'), icon: FileClock, color: 'red' },
-          { label: 'Monthly Payroll', value: formatLakhs(metrics.totalBasicPayroll), icon: CreditCard, color: 'purple' },
+          { label: 'Pending Requests', value: String(metrics.pendingLeaves).padStart(2, '0'), icon: FileClock, color: 'red' }
         ].map(card => {
           const Icon = card.icon;
           return (
@@ -194,89 +240,6 @@ export function AdminDashboard() {
         ) : (
           <div className="p-8 text-center text-sm text-[#6B7280]">No pending requests currently.</div>
         )}
-      </div>
-
-      {/* Professional Profiles Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        {/* HR Profiles Stack */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-            <h3 className="text-base font-semibold text-[#171923] font-serif">HR Profiles</h3>
-            <span className="text-xs font-medium text-gray-500">{hrProfiles.length} Members</span>
-          </div>
-          {hrProfiles.length > 0 ? (
-            <div className="divide-y divide-gray-50 flex-1">
-              {hrProfiles.map(emp => (
-                <div key={emp._id} className="px-5 py-4 flex items-center justify-between hover:bg-[#502D55]/5 transition-colors cursor-pointer group" onClick={() => navigate('/admin/employees')}>
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#171923] to-[#2D1B33] text-white flex items-center justify-center text-xs font-bold shadow-sm">
-                        {emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() : 'HR'}
-                      </div>
-                      <div className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-white bg-white">
-                        <span className={`flex h-2.5 w-2.5 rounded-full ${emp.status === 'Active' || !emp.status ? 'bg-green-500' : 'bg-yellow-500'}`} />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold text-[#171923] group-hover:text-[#502D55] transition-colors">{emp.name}</p>
-                        <span className="inline-flex items-center rounded-md bg-[#171923]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#171923] shrink-0 uppercase tracking-wider">
-                          {emp.role}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                        {emp.position} • {emp.department}
-                      </p>
-                    </div>
-                  </div>
-                  <ArrowRight size={16} className="text-gray-300 group-hover:text-[#502D55] transition-colors" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-8 text-center text-sm text-[#6B7280] flex-1 flex items-center justify-center">No HR profiles found.</div>
-          )}
-        </div>
-
-        {/* Employee Profiles Stack */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-            <h3 className="text-base font-semibold text-[#171923] font-serif">Recent Employees</h3>
-            <button onClick={() => navigate('/admin/employees')} className="text-xs font-medium text-[#502D55] hover:text-[#935073] flex items-center gap-1">View All <ArrowRight size={14} /></button>
-          </div>
-          {employeeProfiles.length > 0 ? (
-            <div className="divide-y divide-gray-50 flex-1">
-              {employeeProfiles.map(emp => (
-                <div key={emp._id} className="px-5 py-4 flex items-center justify-between hover:bg-[#502D55]/5 transition-colors cursor-pointer group" onClick={() => navigate('/admin/employees')}>
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#502D55] to-[#935073] text-white flex items-center justify-center text-xs font-bold shadow-sm">
-                        {emp.name ? emp.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() : 'EM'}
-                      </div>
-                      <div className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-white bg-white">
-                        <span className={`flex h-2.5 w-2.5 rounded-full ${emp.status === 'Active' || !emp.status ? 'bg-green-500' : 'bg-yellow-500'}`} />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold text-[#171923] group-hover:text-[#502D55] transition-colors">{emp.name}</p>
-                        <span className="inline-flex items-center rounded-md bg-[#502D55]/5 px-1.5 py-0.5 text-[10px] font-mono font-bold text-[#502D55] shrink-0">
-                          {emp.login_id}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                        {emp.position} • {emp.department}
-                      </p>
-                    </div>
-                  </div>
-                  <ArrowRight size={16} className="text-gray-300 group-hover:text-[#502D55] transition-colors" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-8 text-center text-sm text-[#6B7280] flex-1 flex items-center justify-center">No employees found.</div>
-          )}
-        </div>
       </div>
     </div>
   );
