@@ -57,7 +57,7 @@ export function SuperAdminHRApproval() {
       setSuccess(`Successfully approved HR. Generated Login ID: ${data.login_id}`);
       fetchPendingHRs();
     } catch (err) {
-      setError(err.message);
+      setError(err.message); if (err.message === 'HR is already approved') { fetchPendingHRs(); }
     } finally {
       setActionLoading(null);
     }
