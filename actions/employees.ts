@@ -181,6 +181,18 @@ export async function createEmployee(
   const allocationProblem = await insertLeaveAllocations(admin, userId, actor.orgId);
   if (allocationProblem) problems.push("leave allocations");
 
+  // First thing the new employee sees in their bell. Not a nicety: the forced
+  // password change drops them straight into the app with no context, and this
+  // is the only place that tells them their leave has already been allocated.
+  // Best-effort — a missing welcome note must not fail the creation.
+  await admin.from("notifications").insert({
+    profile_id: userId,
+    type: "welcome",
+    title: `Welcome to ${actor.organization?.name ?? "the team"}, ${fullName.split(" ")[0]}`,
+    body: "Your leave balance is ready: 24 days paid, 7 days sick. Check in from the top bar each day.",
+    link: "/time-off",
+  });
+
   await admin.from("audit_log").insert({
     org_id: actor.orgId,
     actor_id: actor.id,

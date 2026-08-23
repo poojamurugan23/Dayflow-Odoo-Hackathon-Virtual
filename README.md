@@ -6,8 +6,8 @@ Identity, presence, absence, and compensation as **one** record. Attendance and
 approved leave *feed* payroll rather than sitting beside it — that connection is
 the product thesis, not a bonus feature.
 
-**Status: Phase 0 complete.** Foundation, schema, seed, and first deploy. No
-feature UI yet.
+**Status: Phase 4 complete.** Auth, employees, attendance, and time off all
+work. Salary (Phase 5) and the brand restyle (Phase 6) are outstanding.
 
 ---
 
@@ -173,3 +173,20 @@ the build plan where they disagree. Two deliberate deviations from the SRS:
 2. **Fixed Allowance is the remainder.** The wireframe shows ₹2,918 (11.67%),
    but `wage − sum(components)` = ₹4,168. The remainder rule is used so the
    validation strip balances at ₹50,000 / ₹50,000.
+
+
+---
+
+## Migrations
+
+Run in order, in the Supabase SQL editor:
+
+| File | What it does |
+|---|---|
+| `0001_init.sql` | Schema, `generate_login_id()`, the three derivation views, first RLS policies. Verbatim from the build plan. |
+| `0002_rls_remaining_tables.sql` | RLS on the nine tables 0001 left open — salary was world-readable to any signed-in employee — and `security_invoker` on the views, without which they bypassed RLS entirely. |
+| `0003_resume_fields_and_bank_lockdown.sql` | Resume columns; column-level grants so an employee cannot change their own bank details through the API. |
+| `0004_fix_daily_attendance_grouping.sql` | Drops `a.punch_in` from `v_daily_attendance`'s GROUP BY, so a lunch break stops splitting one day into two half-days. |
+| `0005_notifications_and_leave_integrity.sql` | `notifications` table; closes three ways an employee could grant themselves leave through the API (insert an already-approved request, understate the day count, hold overlapping requests); stops anyone — HR included — approving their own leave. |
+
+Then `npm run setup:storage` for the `avatars` and `leave-documents` buckets.

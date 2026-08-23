@@ -4,8 +4,10 @@ import Image from "next/image";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getOpenPunch } from "@/lib/attendance";
+import { listNotifications, relativeTime } from "@/lib/notifications";
 import { initials, roleLabel } from "@/lib/display";
 import { NavLinks, type NavItem } from "@/components/nav-links";
+import { NotificationBell, type BellNotification } from "@/components/notification-bell";
 import { SystrayCheckIn } from "@/components/systray-checkin";
 import { UserMenu } from "@/components/user-menu";
 
@@ -33,7 +35,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   // The systray needs the live session, so the layout resolves it once here
   // rather than every page doing its own lookup.
-  const openPunch = await getOpenPunch(user.id);
+  const [openPunch, notifications] = await Promise.all([
+    getOpenPunch(user.id),
+    listNotifications(),
+  ]);
+
+  // Relative times are formatted on the server so Intl.RelativeTimeFormat and
+  // the current clock stay out of the client bundle — and so the bell cannot
+  // hydrate with a different "2 minutes ago" than it rendered with.
+  const bellItems: BellNotification[] = notifications.map((item) => ({
+    id: item.id,
+    title: item.title,
+    body: item.body,
+    link: item.link,
+    isRead: item.isRead,
+    when: relativeTime(item.createdAt),
+  }));
+
   const session = {
     // An open punch from an earlier day is a forgotten check-out, not a running
     // session, so it must not start a timer counting from yesterday — and it
@@ -76,6 +94,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
           <div className="ml-auto flex min-w-0 shrink items-center gap-2 sm:gap-3">
             <SystrayCheckIn serverSession={session} />
+            <NotificationBell notifications={bellItems} />
             {user.isManager && (
               <span className="hidden shrink-0 rounded-full border border-border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-muted-foreground lg:inline">
                 {roleLabel(user.role)}

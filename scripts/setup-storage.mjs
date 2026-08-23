@@ -30,6 +30,19 @@ const BUCKETS = [
       allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"],
     },
   },
+  {
+    name: "leave-documents",
+    options: {
+      // PRIVATE, unlike avatars. A sick-leave certificate names a medical
+      // condition; a guessable public URL is not an acceptable way to store one.
+      // Reads happen through 60-second signed URLs minted by getAttachmentUrl()
+      // after it has authorised the caller, and migration 0005 adds an RLS
+      // policy on storage.objects as the second lock.
+      public: false,
+      fileSizeLimit: 5 * 1024 * 1024, // 5 MB
+      allowedMimeTypes: ["application/pdf", "image/png", "image/jpeg", "image/webp"],
+    },
+  },
 ];
 
 const { data: existing, error: listError } = await admin.storage.listBuckets();
@@ -46,7 +59,7 @@ for (const { name, options } of BUCKETS) {
     continue;
   }
   const { error } = await admin.storage.createBucket(name, options);
-  console.log(error ? `  ✗ ${name} — ${error.message}` : `  ✓ ${name} created (public read, 2MB, images only)`);
+  console.log(error ? `  ✗ ${name} — ${error.message}` : `  ✓ ${name} created${options.public ? " (public read)" : " (private)"}`);
 }
 
 const { data: after } = await admin.storage.listBuckets();
