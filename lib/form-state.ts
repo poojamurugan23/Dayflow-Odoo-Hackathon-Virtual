@@ -9,3 +9,21 @@
 export type AuthFormState = { error: string | null };
 
 export const EMPTY_FORM_STATE: AuthFormState = { error: null };
+
+/** Result of creating an employee. The temp password is shown exactly once. */
+export type NewEmployeeState = {
+  error: string | null;
+  created?: {
+    fullName: string;
+    loginId: string;
+    tempPassword: string;
+    profileId: string;
+  };
+};
+
+export const EMPTY_NEW_EMPLOYEE_STATE: NewEmployeeState = { error: null };
+
+/** Result of an inline profile edit. */
+export type EditState = { error: string | null; saved: boolean };
+
+export const EMPTY_EDIT_STATE: EditState = { error: null, saved: false };

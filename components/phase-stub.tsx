@@ -1,4 +1,5 @@
-import { getCurrentUser, roleLabel } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
+import { roleLabel } from "@/lib/display";
 
 /**
  * Placeholder for a screen a later phase builds.

@@ -23,5 +23,11 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    // A separate clone of the team repo lives here and now holds its own copy
+    // of the project. Its "@/*" paths resolve into OUR lib, so leaving it in
+    // would fail our typecheck on files we do not own. Also gitignored.
+    "Dayflow-Odoo-Hackathon-Virtual"
+  ]
 }

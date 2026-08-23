@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
-import { getCurrentUser, initials, roleLabel } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
+import { initials, roleLabel } from "@/lib/display";
 import { NavLinks, type NavItem } from "@/components/nav-links";
 import { SystrayCheckIn } from "@/components/systray-checkin";
 import { UserMenu } from "@/components/user-menu";

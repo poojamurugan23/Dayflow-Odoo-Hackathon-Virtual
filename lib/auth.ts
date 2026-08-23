@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
+import type { UserRole } from "@/lib/display";
 
-export type UserRole = "admin" | "hr" | "employee";
+export type { UserRole };
 
 export type CurrentUser = {
   id: string;
+  orgId: string;
   fullName: string;
   email: string;
   loginId: string;
@@ -19,6 +21,7 @@ export type CurrentUser = {
 /** Shape of the row the query below returns, including the embedded org. */
 type ProfileRow = {
   id: string;
+  org_id: string;
   full_name: string;
   email: string;
   login_id: string;
@@ -48,7 +51,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const { data } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, email, login_id, role, job_position, department, avatar_url, organizations(name, code, logo_url)",
+      "id, org_id, full_name, email, login_id, role, job_position, department, avatar_url, organizations(name, code, logo_url)",
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -61,6 +64,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
   return {
     id: profile.id,
+    orgId: profile.org_id,
     fullName: profile.full_name,
     email: profile.email,
     loginId: profile.login_id,
@@ -77,18 +81,4 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       : null,
     isManager: profile.role === "admin" || profile.role === "hr",
   };
-}
-
-/** "Priya Sharma" -> "PS", for the avatar fallback. */
-export function initials(fullName: string): string {
-  const parts = fullName.split(" ").filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-export function roleLabel(role: UserRole): string {
-  if (role === "admin") return "Admin";
-  if (role === "hr") return "HR Officer";
-  return "Employee";
 }
