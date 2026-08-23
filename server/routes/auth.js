@@ -4,31 +4,56 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// GET /api/auth/seed-admin (Temporary endpoint for hackathon)
-router.get('/seed-admin', async (req, res) => {
+// GET /api/auth/seed-all (Temporary endpoint for hackathon to seed all data)
+router.get('/seed-all', async (req, res) => {
   try {
-    const existingAdmin = await User.findOne({ login_id: 'OIPRSH20220001' });
-    if (existingAdmin) {
-      return res.json({ message: 'Admin already exists!', login_id: 'OIPRSH20220001', password: 'Demo@123' });
+    const salt = await bcrypt.genSalt(10);
+    const adminPasswordHash = await bcrypt.hash('Demo@123', salt);
+    const employeePasswordHash = await bcrypt.hash('password123', salt);
+
+    const usersToCreate = [
+      {
+        login_id: 'OIPRSH20220001', email: 'hr@dayflow.demo', password: adminPasswordHash,
+        role: 'admin', name: 'Priya Sharma', company_name: 'Odoo India',
+        phone: '+91 98765 43210', department: 'Human Resources', position: 'HR Director',
+        joining_date: new Date('2022-01-15')
+      },
+      {
+        login_id: 'OIARME20230001', email: 'employee@dayflow.demo', password: adminPasswordHash,
+        role: 'employee', name: 'Arjun Mehta', company_name: 'Odoo India',
+        phone: '+91 99887 76655', department: 'Engineering', position: 'Senior Software Engineer',
+        joining_date: new Date('2023-03-20')
+      },
+      {
+        email: 'sarah.connor@odoo.com', password: employeePasswordHash, role: 'employee',
+        name: 'Sarah Connor', company_name: 'Odoo India', phone: '+91 98765 11111',
+        department: 'Engineering', position: 'Senior Frontend Developer', login_id: 'OISACO20260002',
+        joining_date: new Date('2026-01-15'), month_wage: 85000, working_days: 5, break_time: 1
+      },
+      {
+        email: 'david.miller@odoo.com', password: employeePasswordHash, role: 'employee',
+        name: 'David Miller', company_name: 'Odoo India', phone: '+91 98765 22222',
+        department: 'Design', position: 'UX/UI Designer', login_id: 'OIDAMI20260003',
+        joining_date: new Date('2026-03-10'), month_wage: 75000, working_days: 5, break_time: 1
+      },
+      {
+        email: 'elena.rodriguez@odoo.com', password: employeePasswordHash, role: 'employee',
+        name: 'Elena Rodriguez', company_name: 'Odoo India', phone: '+91 98765 33333',
+        department: 'Marketing', position: 'Marketing Specialist', login_id: 'OIELRO20260004',
+        joining_date: new Date('2026-05-20'), month_wage: 65000, working_days: 5, break_time: 1
+      }
+    ];
+
+    let createdCount = 0;
+    for (const emp of usersToCreate) {
+      const existing = await User.findOne({ email: emp.email });
+      if (!existing) {
+        await User.create(emp);
+        createdCount++;
+      }
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash('Demo@123', salt);
-
-    const adminUser = await User.create({
-      login_id: 'OIPRSH20220001',
-      email: 'hr@dayflow.demo',
-      password: passwordHash,
-      role: 'admin',
-      name: 'Priya Sharma',
-      company_name: 'Odoo India',
-      phone: '+91 98765 43210',
-      department: 'Human Resources',
-      position: 'HR Director',
-      joining_date: new Date('2022-01-15')
-    });
-
-    res.json({ message: 'Admin created successfully!', user: adminUser.login_id, password: 'Demo@123' });
+    res.json({ message: `Database seeded successfully! Added ${createdCount} new profiles.`, admin_login: 'OIPRSH20220001', admin_password: 'Demo@123' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
