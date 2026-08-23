@@ -471,15 +471,14 @@ router.post('/attendance/check-in', authMiddleware, async (req, res) => {
 // POST /api/data/attendance/check-out
 router.post('/attendance/check-out', authMiddleware, async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    let record = await Attendance.findOne({ 
+      employee_id: req.user.id,
+      check_in: { $ne: null },
+      check_out: null 
+    }).sort({ createdAt: -1 });
 
-    let record = await Attendance.findOne({ employee_id: req.user.id, date: today });
-    if (!record || !record.check_in) {
-      return res.status(400).json({ message: 'Must check in first' });
-    }
-    if (record.check_out) {
-      return res.status(400).json({ message: 'Already checked out today' });
+    if (!record) {
+      return res.status(400).json({ message: 'Must check in first or already checked out' });
     }
 
     record.check_out = new Date();
