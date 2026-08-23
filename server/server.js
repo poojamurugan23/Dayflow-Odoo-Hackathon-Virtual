@@ -35,15 +35,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'DayFlow Backend is running!' });
 });
 
-// Trigger Seed endpoint (temporary for hackathon deployment)
-app.get('/api/trigger-seed', (req, res) => {
+// Trigger setup endpoint (to create Super Admin on fresh deployment)
+app.get('/api/setup-superadmin', (req, res) => {
   const { exec } = require('child_process');
-  exec('node seed.js', { cwd: __dirname }, (error, stdout, stderr) => {
+  exec('node setup_superadmin.js', { cwd: __dirname }, (error, stdout, stderr) => {
     if (error) {
       console.error(`exec error: ${error}`);
-      return res.status(500).send(`Error running seed: ${error.message}`);
+      return res.status(500).send(`Error setting up super admin: ${error.message}`);
     }
-    res.send(`Seed script executed successfully! <br><pre>${stdout}</pre>`);
+    res.send(`Super Admin created successfully! <br><pre>${stdout}</pre><br><strong>Login ID: OISUAD20240001</strong><br><strong>Password: SuperAdmin@123</strong>`);
   });
 });
 
