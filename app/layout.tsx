@@ -26,8 +26,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${sans.variable} ${mono.variable} antialiased`}>{children}</body>
+    // The font variables must sit on <html>, not <body>: globals.css applies
+    // `font-sans` to <html>, and CSS custom properties only inherit downward.
+    // With the variables on <body>, var(--font-sans) was undefined at <html>
+    // and every page silently fell back to Times New Roman.
+    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }
