@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import API_BASE from '../../lib/api';
+import API_BASE, { getAvatarUrl } from '../../lib/api';
 import { Search, ChevronLeft, ChevronRight, Loader2, Clock } from 'lucide-react';
 
 export function AdminAttendance() {
@@ -167,9 +167,11 @@ export function AdminAttendance() {
                     <tr key={r._id || i} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-[#502D55] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                            {(r.employee_id?.name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2)}
-                          </div>
+                          <img 
+                            src={getAvatarUrl(r.employee_id)} 
+                            alt="Avatar" 
+                            className="h-8 w-8 rounded-full object-cover flex-shrink-0 border border-gray-200"
+                          />
                           <div>
                             <p className="font-semibold text-[#171923]">{r.employee_id?.name || 'Unknown'}</p>
                             <p className="text-xs text-[#6B7280] font-mono">{r.employee_id?.login_id || ''}</p>

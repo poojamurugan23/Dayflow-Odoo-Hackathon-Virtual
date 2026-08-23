@@ -10,6 +10,106 @@ const LeaveRequest = require('../models/LeaveRequest');
 const Complaint = require('../models/Complaint');
 const Meeting = require('../models/Meeting');
 
+// GET /api/data/seed-mock-realtime
+router.get('/seed-mock-realtime', async (req, res) => {
+  try {
+    const EMPLOYEES = [
+      { name: 'Michael Chen', email: 'michael.c@odoo.com', gender: 'male', department: 'Engineering', position: 'Frontend Developer' },
+      { name: 'Sarah Jenkins', email: 'sarah.j@odoo.com', gender: 'female', department: 'Engineering', position: 'Backend Developer' },
+      { name: 'David Smith', email: 'david.s@odoo.com', gender: 'male', department: 'Product', position: 'Product Manager' },
+      { name: 'Emily Davis', email: 'emily.d@odoo.com', gender: 'female', department: 'Marketing', position: 'Marketing Lead' },
+      { name: 'James Wilson', email: 'james.w@odoo.com', gender: 'male', department: 'Finance', position: 'Financial Analyst' },
+      { name: 'Sophia Lee', email: 'sophia.l@odoo.com', gender: 'female', department: 'Operations', position: 'Operations Manager' },
+      { name: 'Daniel Martinez', email: 'daniel.m@odoo.com', gender: 'male', department: 'Engineering', position: 'DevOps Engineer' },
+      { name: 'Olivia Taylor', email: 'olivia.t@odoo.com', gender: 'female', department: 'HR', position: 'Recruiter' },
+      { name: 'William Brown', email: 'william.b@odoo.com', gender: 'male', department: 'Sales', position: 'Sales Representative' },
+      { name: 'Emma Anderson', email: 'emma.a@odoo.com', gender: 'female', department: 'Engineering', position: 'QA Engineer' },
+      { name: 'Alexander Thomas', email: 'alexander.t@odoo.com', gender: 'male', department: 'Product', position: 'UX Designer' },
+      { name: 'Isabella Jackson', email: 'isabella.j@odoo.com', gender: 'female', department: 'Marketing', position: 'Content Creator' }
+    ];
+
+    const salt = await bcrypt.genSalt(10);
+    const defaultPassword = await bcrypt.hash('password123', salt);
+    let employeeDocs = await User.find({ role: 'employee' });
+
+    if (employeeDocs.length < 12) {
+      for (const emp of EMPLOYEES) {
+        const exists = await User.findOne({ email: emp.email });
+        if (!exists) {
+          const newUser = new User({
+            name: emp.name,
+            email: emp.email,
+            password: defaultPassword,
+            role: 'employee',
+            gender: emp.gender,
+            department: emp.department,
+            position: emp.position,
+            company_name: 'Odoo India',
+            login_id: \`OI\${emp.name.substring(0,2).toUpperCase()}202600\${Math.floor(Math.random() * 100)}\`,
+            status: 'Active',
+            joining_date: new Date(new Date().setMonth(new Date().getMonth() - Math.floor(Math.random() * 12)))
+          });
+          await newUser.save();
+        }
+      }
+      employeeDocs = await User.find({ role: 'employee' });
+    }
+
+    await Attendance.deleteMany({});
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 4; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      if (d.getDay() === 0 || d.getDay() === 6) continue;
+      for (const emp of employeeDocs) {
+        if (Math.random() < 0.9) {
+          const checkInTime = new Date(d);
+          checkInTime.setHours(8 + Math.floor(Math.random() * 2), Math.floor(Math.random() * 60), 0);
+          const checkOutTime = new Date(d);
+          checkOutTime.setHours(17 + (Math.random() > 0.5 ? 1 : 0), Math.floor(Math.random() * 60), 0);
+
+          const record = new Attendance({
+            employee_id: emp._id,
+            date: d,
+            check_in: checkInTime,
+            check_out: i === 0 ? null : checkOutTime,
+            status: 'Present'
+          });
+          await record.save();
+        }
+      }
+    }
+
+    await LeaveRequest.deleteMany({});
+    if (employeeDocs.length > 2) {
+      await new LeaveRequest({
+        employee_id: employeeDocs[0]._id,
+        leave_type: 'Sick Leave',
+        start_date: today,
+        end_date: new Date(today.getTime() + 86400000 * 2),
+        reason: 'Viral fever',
+        status: 'Approved'
+      }).save();
+
+      await new LeaveRequest({
+        employee_id: employeeDocs[1]._id,
+        leave_type: 'Paid time off',
+        start_date: new Date(today.getTime() + 86400000 * 5),
+        end_date: new Date(today.getTime() + 86400000 * 8),
+        reason: 'Family vacation',
+        status: 'Pending'
+      }).save();
+    }
+
+    res.json({ message: 'Real-time mock data seeded successfully!' });
+  } catch (error) {
+    console.error('Seed error:', error);
+    res.status(500).json({ message: 'Server error during seeding' });
+  }
+});
+
 // Middleware to protect routes
 const authMiddleware = (req, res, next) => {
   const token = req.header('Authorization')?.split(' ')[1];
@@ -242,7 +342,7 @@ router.post('/employees', authMiddleware, async (req, res) => {
                       <li>Fill out your personal details, emergency contacts, and list your skills.</li>
                     </ul>
                     <div style="text-align: center; margin-top: 20px;">
-                      <a href="${process.env.FRONTEND_URL || 'https://dayflow-api-n4i2.onrender.com'}/login" style="background-color: #502D55; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block;">Access My Dashboard</a>
+                      <a href="${process.env.FRONTEND_URL || 'https://dayflow-ivory.vercel.app'}/login" style="background-color: #502D55; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block;">Access My Dashboard</a>
                     </div>
                   </div>
                   
@@ -424,8 +524,15 @@ router.get('/attendance', authMiddleware, async (req, res) => {
       }
       const attendance = await Attendance.find(dateFilter)
         .sort({ date: -1 })
-        .populate('employee_id', 'name login_id department position');
-      res.json(attendance);
+        .populate({
+          path: 'employee_id',
+          match: { role: 'employee' },
+          select: 'name login_id department position gender'
+        });
+      
+      // Filter out null employee_id (which means they were filtered out by the match condition)
+      const filteredAttendance = attendance.filter(record => record.employee_id != null);
+      res.json(filteredAttendance);
     } else {
       // Employee: own records, optionally filtered by month
       const monthParam = req.query.month; // e.g. "2026-08"
@@ -758,6 +865,19 @@ router.get('/reports', authMiddleware, async (req, res) => {
     const employeeUsers = await User.find({ role: { $nin: ['admin', 'hr'] } }).select('_id department');
     const employeeIds = employeeUsers.map(u => u._id);
 
+    const presentToday = await Attendance.countDocuments({
+      date: { $gte: today, $lt: tomorrow },
+      employee_id: { $in: employeeIds }
+    });
+
+    const pendingLeaves = await LeaveRequest.countDocuments({ status: 'Pending', employee_id: { $in: employeeIds } });
+    const approvedLeaves = await LeaveRequest.countDocuments({ 
+      status: 'Approved', 
+      employee_id: { $in: employeeIds },
+      start_date: { $lte: tomorrow },
+      end_date: { $gte: today }
+    });
+
     // Department aggregation
     const deptCounts = {};
     employeeUsers.forEach(u => {
@@ -773,20 +893,6 @@ router.get('/reports', authMiddleware, async (req, res) => {
       color: colors[idx % colors.length]
     }));
 
-    const presentToday = await Attendance.countDocuments({
-      date: { $gte: today, $lt: tomorrow },
-      status: 'Present',
-      employee_id: { $in: employeeIds }
-    });
-
-    const pendingLeaves = await LeaveRequest.countDocuments({ status: 'Pending', employee_id: { $in: employeeIds } });
-    const approvedLeaves = await LeaveRequest.countDocuments({ 
-      status: 'Approved', 
-      employee_id: { $in: employeeIds },
-      start_date: { $lte: tomorrow },
-      end_date: { $gte: today }
-    });
-
     // Attendance Trend (Last 5 days)
     const attendanceTrend = [];
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -798,7 +904,6 @@ router.get('/reports', authMiddleware, async (req, res) => {
       
       const presentCount = await Attendance.countDocuments({
         date: { $gte: d, $lt: nextD },
-        status: { $in: ['Present', 'Half-day'] },
         employee_id: { $in: employeeIds }
       });
       
@@ -819,6 +924,30 @@ router.get('/reports', authMiddleware, async (req, res) => {
       attendanceTrend
     });
   } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET /api/data/analytics (Superadmin overview metrics)
+router.get('/analytics', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const totalEmployees = await User.countDocuments({ role: 'employee' });
+    const activeEmployees = await User.countDocuments({ role: 'employee', status: 'Active' });
+    const pendingHRs = await User.countDocuments({ role: 'hr', is_approved: false });
+    const totalHRs = await User.countDocuments({ role: 'hr', is_approved: true });
+
+    res.json({
+      totalEmployees,
+      activeEmployees,
+      pendingHRs,
+      totalHRs
+    });
+  } catch (error) {
+    console.error('Analytics error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

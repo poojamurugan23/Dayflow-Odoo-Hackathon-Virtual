@@ -5,22 +5,7 @@ import { Users, UserCheck, UserX, Calendar, Clock, Bell, Info, Video } from 'luc
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 
-const attendanceTrend = [
-  { day: 'Mon', present: 230, absent: 18 },
-  { day: 'Tue', present: 225, absent: 23 },
-  { day: 'Wed', present: 235, absent: 13 },
-  { day: 'Thu', present: 221, absent: 27 },
-  { day: 'Fri', present: 218, absent: 30 },
-];
-
-const deptData = [
-  { name: 'Engineering', value: 85, color: '#502D55' },
-  { name: 'Product', value: 32, color: '#935073' },
-  { name: 'HR', value: 18, color: '#A78BA3' },
-  { name: 'Finance', value: 25, color: '#3B82F6' },
-  { name: 'Marketing', value: 42, color: '#F59E0B' },
-  { name: 'Operations', value: 46, color: '#10B981' },
-];
+// Data comes from metrics now
 
 export function SuperAdminDashboard() {
   const { user } = useAuth();
@@ -31,6 +16,8 @@ export function SuperAdminDashboard() {
     presentToday: 0,
     pendingLeaves: 0,
     approvedLeaves: 0,
+    deptData: [],
+    attendanceTrend: []
   });
   
   const [notifications, setNotifications] = useState([]);
@@ -166,7 +153,7 @@ export function SuperAdminDashboard() {
             {/* <button onClick={() => navigate('/superadmin/reports')} className="text-xs font-medium text-[#502D55] hover:text-[#935073] flex items-center gap-1">View Reports <ArrowRight size={14} /></button> */}
           </div>
           <ResponsiveContainer width="99%" height={260}>
-            <BarChart data={attendanceTrend} barGap={6}>
+            <BarChart data={metrics.attendanceTrend} barGap={6}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
               <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={false} tickLine={false} />
@@ -181,14 +168,14 @@ export function SuperAdminDashboard() {
           <h3 className="text-base font-semibold text-[#171923] font-serif mb-4">Department Split</h3>
           <ResponsiveContainer width="99%" height={180}>
             <PieChart>
-              <Pie data={deptData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
-                {deptData.map((d, i) => <Cell key={i} fill={d.color} />)}
+              <Pie data={metrics.deptData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
+                {metrics.deptData.map((d, i) => <Cell key={i} fill={d.color} />)}
               </Pie>
               <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '12px' }} />
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
-            {deptData.map(d => (
+            {metrics.deptData.map(d => (
               <div key={d.name} className="flex items-center gap-2 text-xs text-[#6B7280]">
                 <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }}></span>
                 {d.name}

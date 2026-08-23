@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import API_BASE from '../../lib/api';
+import API_BASE, { getAvatarUrl } from '../../lib/api';
 import { Check, X, Search, Plus, Calendar, Loader2, CheckCircle, Clock, XCircle } from 'lucide-react';
 
 const LEAVE_TYPES = ['Paid time off', 'Sick Leave', 'Unpaid Leaves'];
@@ -260,9 +260,11 @@ export function AdminTimeOff() {
                       {/* Name */}
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-[#502D55] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                            {(leave.employee_id?.name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2)}
-                          </div>
+                          <img 
+                            src={getAvatarUrl(leave.employee_id)} 
+                            alt="Avatar" 
+                            className="h-8 w-8 rounded-full object-cover flex-shrink-0 border border-gray-200"
+                          />
                           <div>
                             <p className="font-semibold text-[#171923]">{leave.employee_id?.name || 'Unknown Employee'}</p>
                             <p className="text-xs text-[#6B7280] font-mono">{leave.employee_id?.login_id || ''}</p>

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 const User = require('../models/User');
 
 // GET /api/auth/seed-all (Temporary endpoint for hackathon to seed all data)
@@ -188,6 +189,63 @@ router.post('/approve-hr', async (req, res) => {
     hrUser.joining_date = new Date(); // Set official joining date to approval date
 
     await hrUser.save();
+
+    // --- Send HR Approval Email via Nodemailer ---
+    try {
+      const emailPass = (process.env.EMAIL_PASSWORD || 'missing_password').replace(/["' ]/g, '');
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: 'odooindiahawkinshackerzzz@gmail.com',
+          pass: emailPass
+        }
+      });
+
+      const mailOptions = {
+        from: '"Odoo-HRMS Team" <odooindiahawkinshackerzzz@gmail.com>',
+        to: hrUser.email,
+        subject: 'Odoo-HRMS - Account Approved',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #F3F4F6; margin: 0; padding: 40px 0;">
+            <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden;">
+              <tr>
+                <td style="background: linear-gradient(135deg, #502D55 0%, #935073 100%); padding: 40px 30px; text-align: center;">
+                  <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 1px;">Odoo-HRMS</h1>
+                  <p style="color: #fce7f3; margin: 10px 0 0 0; font-size: 16px;">Welcome aboard, ${hrUser.name}!</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 40px 30px;">
+                  <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-top: 0;">
+                    Your HR profile has been successfully approved by the Super Admin.
+                  </p>
+                  <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+                    Below is your secure login ID to access your HR dashboard. Please use the password you created during sign-up.
+                  </p>
+                  
+                  <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 25px; margin: 30px 0; text-align: center;">
+                    <div style="margin-bottom: 15px;">
+                      <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; display: block; margin-bottom: 5px;">Login ID</span>
+                      <strong style="font-size: 24px; color: #502D55; letter-spacing: 2px;">${finalLoginId}</strong>
+                    </div>
+                  </div>
+                  
+                  <div style="text-align: center; margin-top: 30px;">
+                    <a href="https://dayflow-ivory.vercel.app/login" style="background-color: #502D55; color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block;">Sign In Now</a>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
+        `
+      };
+      await transporter.sendMail(mailOptions);
+    } catch (emailError) {
+      console.error('Failed to send HR approval email:', emailError);
+    }
 
     res.json({ message: 'HR approved successfully', login_id: finalLoginId });
   } catch (error) {
