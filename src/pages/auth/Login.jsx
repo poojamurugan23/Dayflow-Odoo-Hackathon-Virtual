@@ -111,6 +111,7 @@ export function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-3.5 pr-10 text-sm text-gray-900 focus:border-[#502D55] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#502D55] transition-colors shadow-sm"
                   placeholder="••••••••"
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
