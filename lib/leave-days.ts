@@ -120,6 +120,21 @@ export function formatDays(days: number): string {
 }
 
 /**
+ * Zero-padded to two digits, as the wireframe writes it: "24 Days Available"
+ * but "07 Days Available". Padding keeps the two balance chips the same width so
+ * they do not jitter as balances change.
+ */
+export function padDays(days: number): string {
+  const text = formatDays(days);
+  return /^\d$/.test(text) ? `0${text}` : text;
+}
+
+/** "01.00 Days", the wireframe's Allocation format in the request modal. */
+export function allocationDays(days: number): string {
+  return days.toFixed(2).padStart(5, "0");
+}
+
+/**
  * Innovation 3 — auto-approve, THE ONE PLACE THE RULE LIVES.
  *
  * Sick leave of one day or less, with balance available, is approved on submit.

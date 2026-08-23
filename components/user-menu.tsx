@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRef } from "react";
-import { ChevronDown, LogOut, User } from "lucide-react";
+import { ChevronDown, LogOut, Settings, User } from "lucide-react";
 
 import { signOut } from "@/actions/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,7 +23,11 @@ type UserMenuProps = {
   initials: string;
 };
 
-/** Avatar dropdown. Two items only — My Profile and Log Out — per the wireframe. */
+/**
+ * Avatar dropdown. My Profile and Log Out are the wireframe's two items;
+ * Settings is the third because wireframe image 4 puts a Settings affordance on
+ * the employee grid, and the account menu is where people look for it.
+ */
 export function UserMenu({ fullName, loginId, roleLabel, avatarUrl, initials }: UserMenuProps) {
   const signOutForm = useRef<HTMLFormElement>(null);
 
@@ -48,6 +52,13 @@ export function UserMenu({ fullName, loginId, roleLabel, avatarUrl, initials }: 
         </DropdownMenuLabel>
 
         <DropdownMenuSeparator />
+
+        <DropdownMenuItem asChild>
+          <Link href="/settings">
+            <Settings className="size-4" aria-hidden />
+            Settings
+          </Link>
+        </DropdownMenuItem>
 
         <DropdownMenuItem asChild>
           <Link href="/profile">

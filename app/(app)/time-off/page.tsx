@@ -8,13 +8,19 @@ import {
   conflictsForRequests,
   getBalances,
   getHolidayDates,
+  getHolidayMap,
+  getLeaveCalendar,
   getPendingCount,
+  getUpcomingHolidays,
   listAllocations,
   listLeaveRequests,
   listLeaveTypes,
 } from "@/lib/leave";
+import { todayIST } from "@/lib/attendance";
 import { BalanceChips, PendingChip } from "@/components/time-off/balance-chips";
+import { AdminQueue } from "@/components/time-off/admin-queue";
 import { AllocationList } from "@/components/time-off/allocation-list";
+import { LeaveCalendar } from "@/components/time-off/leave-calendar";
 import { RequestTable } from "@/components/time-off/request-table";
 import { TimeOffRequest, type LeaveTypeChoice } from "@/components/time-off-request";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -57,21 +63,29 @@ async function View({ tab }: { tab?: string }) {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  return user.isManager ? <ManagerView userId={user.id} tab={tab} /> : <EmployeeView userId={user.id} />;
+  return user.isManager ? (
+    <ManagerView userId={user.id} tab={tab} />
+  ) : (
+    <EmployeeView userId={user.id} fullName={user.fullName} />
+  );
 }
 
 // ---------------------------------------------------------------------------
 // Employee — own balances, own requests, NEW
 // ---------------------------------------------------------------------------
-async function EmployeeView({ userId }: { userId: string }) {
-  const [balances, requests, types, holidays] = await Promise.all([
-    getBalances(userId),
-    // No profileId filter needed — RLS returns own-only. Passing one would
-    // suggest the filter is what protects this, and it is not.
-    listLeaveRequests(),
-    listLeaveTypes(),
-    getHolidayDates(),
-  ]);
+async function EmployeeView({ userId, fullName }: { userId: string; fullName: string }) {
+  const [balances, requests, types, holidays, calendarLeave, holidayMap, upcomingHolidays] =
+    await Promise.all([
+      getBalances(userId),
+      // No profileId filter needed — RLS returns own-only. Passing one would
+      // suggest the filter is what protects this, and it is not.
+      listLeaveRequests(),
+      listLeaveTypes(),
+      getHolidayDates(),
+      getLeaveCalendar(),
+      getHolidayMap(),
+      getUpcomingHolidays(),
+    ]);
 
   // Unpaid leave has no allocation row and therefore no balance, which is
   // correct: `available: null` is what tells the modal not to show a ceiling.
@@ -90,12 +104,22 @@ async function EmployeeView({ userId }: { userId: string }) {
 
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-sm font-medium text-foreground">My requests</h2>
-        <TimeOffRequest leaveTypes={choices} holidays={holidays} />
+        <TimeOffRequest leaveTypes={choices} holidays={holidays} employeeName={fullName} />
       </div>
 
       <RequestTable
         requests={requests}
-        emptyMessage="No time off requested yet. Press NEW to apply."
+        emptyMessage="No requests yet — request time off with the NEW button."
+      />
+
+      {/* Wireframe image 7. Employee view only: an admin's screen is the
+          approval queue, and a calendar of one person's leave is not what they
+          are there to do. */}
+      <LeaveCalendar
+        today={todayIST()}
+        leave={calendarLeave}
+        holidays={holidayMap}
+        upcomingHolidays={upcomingHolidays}
       />
     </div>
   );
@@ -149,14 +173,7 @@ async function ManagerView({ userId, tab }: { userId: string; tab?: string }) {
       {isAllocation ? (
         <AllocationList rows={allocations} />
       ) : (
-        <RequestTable
-          requests={ordered}
-          showRequester
-          canDecide
-          currentUserId={userId}
-          conflicts={conflicts}
-          emptyMessage="No requests in the organisation yet."
-        />
+        <AdminQueue requests={ordered} currentUserId={userId} conflicts={conflicts} />
       )}
     </div>
   );

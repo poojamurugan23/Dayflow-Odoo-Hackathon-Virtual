@@ -22,6 +22,7 @@ const eslintConfig = [
       // holds its own copy of the project. It is gitignored; keep it out of
       // our lint too, so its files cannot fail our build.
       "Dayflow-Odoo-Hackathon-Virtual/**",
+      "phase-1-5-krithi_build/**",
     ],
   },
 ];

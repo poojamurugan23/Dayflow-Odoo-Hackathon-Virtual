@@ -1,4 +1,4 @@
-import { formatDays } from "@/lib/leave-days";
+import { formatDays, padDays } from "@/lib/leave-days";
 
 export type BalanceChip = {
   leaveType: string;
@@ -32,7 +32,7 @@ export function BalanceChips({ balances }: { balances: BalanceChip[] }) {
         >
           <p className="text-xs text-muted-foreground">{balance.leaveType}</p>
           <p className="mt-0.5 text-xl font-semibold tracking-tight text-foreground">
-            {formatDays(balance.available)}
+            {padDays(balance.available)}
             <span className="ml-1 text-xs font-normal text-muted-foreground">days available</span>
           </p>
           <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">

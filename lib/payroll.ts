@@ -177,6 +177,76 @@ export async function getPayableDays(profileId: string): Promise<PayableDays | n
 }
 
 // ---------------------------------------------------------------------------
+// Work schedule (wireframe image 2)
+// ---------------------------------------------------------------------------
+export type WorkSchedule = {
+  name: string;
+  daysPerWeek: number;
+  hoursPerDay: number;
+  breakMinutes: number;
+  halfDayThreshold: number;
+};
+
+/**
+ * The schedule attached to this salary structure, or the org's default.
+ *
+ * READ-ONLY everywhere this phase. Editing a schedule changes how
+ * v_daily_attendance scores every past day for that person — a half-day
+ * threshold moved from 4 hours to 5 silently reclassifies history — so it needs
+ * effective-dating of its own, the same treatment salary got. Out of scope here;
+ * the schema already carries schedule_id per structure to support it.
+ */
+export async function getWorkSchedule(structureId?: string): Promise<WorkSchedule | null> {
+  const supabase = await createClient();
+
+  if (structureId) {
+    const { data } = await supabase
+      .from("salary_structures")
+      .select("schedule_id")
+      .eq("id", structureId)
+      .maybeSingle();
+
+    const scheduleId = (data as { schedule_id: string | null } | null)?.schedule_id;
+    if (scheduleId) {
+      const { data: row } = await supabase
+        .from("work_schedules")
+        .select("name, days_per_week, hours_per_day, break_minutes, half_day_threshold")
+        .eq("id", scheduleId)
+        .maybeSingle();
+      if (row) return toSchedule(row as RawSchedule);
+    }
+  }
+
+  // Falls back to the org's only schedule. Every employee shares it at demo
+  // scale, so this is the normal path rather than a repair path.
+  const { data } = await supabase
+    .from("work_schedules")
+    .select("name, days_per_week, hours_per_day, break_minutes, half_day_threshold")
+    .limit(1)
+    .maybeSingle();
+
+  return data ? toSchedule(data as RawSchedule) : null;
+}
+
+type RawSchedule = {
+  name: string;
+  days_per_week: number | string;
+  hours_per_day: number | string;
+  break_minutes: number | string;
+  half_day_threshold: number | string;
+};
+
+function toSchedule(row: RawSchedule): WorkSchedule {
+  return {
+    name: row.name,
+    daysPerWeek: Number(row.days_per_week),
+    hoursPerDay: Number(row.hours_per_day),
+    breakMinutes: Number(row.break_minutes),
+    halfDayThreshold: Number(row.half_day_threshold),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Statutory config
 // ---------------------------------------------------------------------------
 export async function getStatutoryConfig(): Promise<StatutoryConfig> {

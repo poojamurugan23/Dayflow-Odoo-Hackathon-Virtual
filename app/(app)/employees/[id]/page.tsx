@@ -6,7 +6,13 @@ import { ChevronLeft, ShieldOff, TriangleAlert } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { getOpenPunch, getTodayStatuses } from "@/lib/attendance";
 import { getEmployee, getPrivateInfo, listManagerOptions } from "@/lib/employees";
-import { getCurrentSalary, getPayableDays, getSalaryHistory, getStatutoryConfig } from "@/lib/payroll";
+import {
+  getCurrentSalary,
+  getPayableDays,
+  getSalaryHistory,
+  getStatutoryConfig,
+  getWorkSchedule,
+} from "@/lib/payroll";
 import { monthLabel, monthStartOf, todayIST } from "@/lib/attendance";
 import type { SalaryTabData } from "@/components/salary/salary-tab";
 import { EmployeeProfile } from "@/components/profile/employee-profile";
@@ -53,7 +59,7 @@ async function Profile({ id }: { id: string }) {
 
   const employee = result.employee;
   const isSelf = user.id === employee.id;
-  const isAdmin = user.role === "admin";
+  const isAdmin = user.isAdmin;
 
   const [info, todayStatuses, managers, openPunch, salary] = await Promise.all([
     getPrivateInfo(employee.id),
@@ -80,6 +86,11 @@ async function Profile({ id }: { id: string }) {
       managers={managers}
       salary={salary}
       isAdmin={isAdmin}
+      security={
+        isSelf
+          ? { loginId: user.loginId, email: user.email, lastSignInAt: user.lastSignInAt }
+          : null
+      }
     />
   );
 }
@@ -102,12 +113,17 @@ export async function loadSalary(profileId: string): Promise<SalaryTabData | nul
 
   if (!structure) return null;
 
+  // After the structure resolves, so the schedule is the one THIS structure
+  // points at rather than whichever row happens to come back first.
+  const schedule = await getWorkSchedule(structure.id);
+
   return {
     profileId,
     monthlyWage: structure.monthlyWage,
     effectiveFrom: structure.effectiveFrom,
     rules: structure.rules,
     statutory,
+    schedule,
     payable,
     month: monthLabel(monthStartOf(todayIST())),
     history: history.map((row) => ({

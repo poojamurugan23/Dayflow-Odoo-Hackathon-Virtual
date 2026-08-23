@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Plus, Search, Users } from "lucide-react";
+import { Plus, Search, Settings, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +67,17 @@ export function EmployeeDirectory({ employees, statuses, canCreate, liveIds = []
         <p className="ml-auto text-xs text-muted-foreground" aria-live="polite">
           {filtered.length} of {employees.length}
         </p>
+
+        {/* Wireframe image 4 shows a Settings affordance on this screen. It is
+            also in the account menu; this is the one the wireframe draws. */}
+        <Link
+          href="/settings"
+          aria-label="Settings"
+          title="Settings"
+          className="flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Settings className="size-4" aria-hidden />
+        </Link>
       </div>
 
       {employees.length === 0 ? (

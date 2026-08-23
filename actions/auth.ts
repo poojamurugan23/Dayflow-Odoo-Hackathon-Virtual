@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -24,6 +24,19 @@ const CHANGE_PASSWORD = "/change-password";
  * an oracle for enumerating valid login IDs.
  */
 const BAD_CREDENTIALS = "Those credentials don't match. Try again.";
+
+/**
+ * A client with no session and no cookie access, used only to check that a
+ * password is correct. Deliberately separate from lib/supabase/server.ts, whose
+ * client reads and WRITES the request's auth cookies.
+ */
+function createAnonClient(): SupabaseClient {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+}
 
 /** Passwords must not be trimmed or whitespace-collapsed — spaces are legal. */
 function rawString(value: FormDataEntryValue | null): string {
@@ -258,6 +271,18 @@ export async function changePassword(
 ): Promise<AuthFormState> {
   const password = rawString(formData.get("password"));
   const confirmPassword = rawString(formData.get("confirmPassword"));
+  // Phase 6 additions, both optional so the Phase 1 forced-change screen keeps
+  // working unchanged: it sends neither field.
+  //
+  //   currentPassword — the Security tab asks for it, per the wireframe. Someone
+  //     changing their password from inside a live session should have to prove
+  //     the session is theirs; the forced-change screen does not, because the
+  //     user authenticated with the temporary password seconds earlier.
+  //   redirectTo — the forced-change screen must land on the dashboard, but the
+  //     Security tab should stay where it is rather than throwing the user out
+  //     of their own profile.
+  const currentPassword = rawString(formData.get("currentPassword"));
+  const requestedRedirect = cleanString(formData.get("redirectTo"));
 
   const pwProblem = passwordProblem(password);
   if (pwProblem) return { error: pwProblem };
@@ -269,6 +294,21 @@ export async function changePassword(
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/sign-in");
+
+  if (currentPassword) {
+    if (currentPassword === password) {
+      return { error: "That's your current password. Choose a different one." };
+    }
+    // Verified on a THROWAWAY client, never `supabase` above: signing in on the
+    // request-scoped client would rewrite the session cookie as a side effect of
+    // a validation check. This one persists nothing and touches no cookies.
+    const verifier = createAnonClient();
+    const { error } = await verifier.auth.signInWithPassword({
+      email: user.email ?? "",
+      password: currentPassword,
+    });
+    if (error) return { error: "Your current password is wrong." };
+  }
 
   const { error: updateError } = await supabase.auth.updateUser({ password });
   if (updateError) {
@@ -291,7 +331,15 @@ export async function changePassword(
   }
 
   revalidatePath("/", "layout");
-  redirect(DASHBOARD);
+
+  // Only in-app paths are honoured, so a crafted `redirectTo` cannot bounce a
+  // freshly-authenticated user to another origin.
+  const destination =
+    requestedRedirect.startsWith("/") && !requestedRedirect.startsWith("//")
+      ? requestedRedirect
+      : DASHBOARD;
+
+  redirect(destination);
 }
 
 // ---------------------------------------------------------------------------

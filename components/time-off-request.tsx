@@ -5,7 +5,7 @@ import { CalendarDays, CircleCheck, Paperclip, TriangleAlert, Users } from "luci
 
 import { checkTeamConflicts, requestLeave } from "@/actions/leave";
 import { EMPTY_LEAVE_REQUEST_STATE } from "@/lib/form-state";
-import { countLeaveDays, formatDays, type DayCount } from "@/lib/leave-days";
+import { allocationDays, countLeaveDays, formatDays, type DayCount } from "@/lib/leave-days";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -49,10 +49,13 @@ export type LeaveTypeChoice = {
 export function TimeOffRequest({
   leaveTypes,
   holidays,
+  employeeName,
 }: {
   leaveTypes: LeaveTypeChoice[];
   /** The org's holiday dates, so the day count can exclude them without a round trip. */
   holidays: string[];
+  /** Shown prefilled, as the wireframe does — you can only request your own leave. */
+  employeeName: string;
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(requestLeave, EMPTY_LEAVE_REQUEST_STATE);
@@ -159,10 +162,19 @@ export function TimeOffRequest({
           </div>
         ) : (
           <form action={formAction} className="grid gap-4">
+            {/* Prefilled and not editable: the request is always for yourself.
+                The server action reads the requester from the SESSION and never
+                from the form, so there is nothing here to tamper with — this row
+                is information, not input. */}
+            <div className="flex items-baseline justify-between gap-3 border-b border-border pb-3">
+              <span className="text-sm text-muted-foreground">Employee</span>
+              <span className="text-sm font-medium text-foreground">{employeeName}</span>
+            </div>
+
             {/* Radix Select renders a hidden native select for `name`, so the
                 value reaches the server action without a shadow input. */}
             <div className="grid gap-1.5">
-              <Label htmlFor="leaveType">Leave type</Label>
+              <Label htmlFor="leaveType">Time off type</Label>
               <Select name="leaveTypeId" value={typeId} onValueChange={setTypeId} required>
                 <SelectTrigger id="leaveType" className="w-full">
                   <SelectValue placeholder="Choose a type" />
@@ -188,7 +200,8 @@ export function TimeOffRequest({
               )}
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <fieldset className="grid gap-3 sm:grid-cols-2">
+              <legend className="mb-1.5 text-sm font-medium text-foreground">Validity period</legend>
               <div className="grid gap-1.5">
                 <Label htmlFor="startDate">From</Label>
                 <Input
@@ -215,13 +228,16 @@ export function TimeOffRequest({
                   }}
                 />
               </div>
-            </div>
+            </fieldset>
 
             {count && (
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs">
+                {/* "Allocation — 01.00 Days", as the wireframe labels it. */}
                 <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
                   <CalendarDays className="size-3.5" aria-hidden />
-                  {formatDays(count.leaveDays)} day{count.leaveDays === 1 ? "" : "s"} of leave
+                  <span className="text-muted-foreground">Allocation</span>
+                  <span className="font-mono tabular-nums">{allocationDays(count.leaveDays)}</span>
+                  {count.leaveDays === 1 ? "Day" : "Days"}
                 </span>
                 {count.excluded.length > 0 && (
                   <span className="text-muted-foreground">
@@ -300,11 +316,11 @@ export function TimeOffRequest({
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="ghost" size="sm">
-                  Cancel
+                  Discard
                 </Button>
               </DialogClose>
               <Button type="submit" size="sm" disabled={pending}>
-                {pending ? "Submitting…" : "Submit request"}
+                {pending ? "Submitting…" : "Submit"}
               </Button>
             </DialogFooter>
           </form>

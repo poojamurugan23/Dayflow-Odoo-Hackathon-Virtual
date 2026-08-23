@@ -14,7 +14,7 @@ import {
   type ComponentRule,
   type StatutoryConfig,
 } from "@/lib/salary";
-import type { PayableDays } from "@/lib/payroll";
+import type { PayableDays, WorkSchedule } from "@/lib/payroll";
 import { formatDate } from "@/lib/display";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,8 @@ export type SalaryTabData = {
   effectiveFrom: string;
   rules: ComponentRule[];
   statutory: StatutoryConfig;
+  /** Read-only this phase — see getWorkSchedule() for why. */
+  schedule: WorkSchedule | null;
   payable: PayableDays | null;
   month: string;
   /** Previous structures, newest first — the versioning trail. */
@@ -196,6 +198,33 @@ function SalaryFigures({ data, canEdit }: { data: SalaryTabData; canEdit: boolea
         </div>
       </div>
 
+      {/* ---- Schedule (wireframe image 2) ----
+          Beside the wage fields, as the wireframe places them. Read-only for
+          everyone: changing a schedule retroactively rescores attendance
+          history, which needs effective-dating of its own. */}
+      {data.schedule && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-xl border border-border px-4 py-3">
+            <p className="text-xs text-muted-foreground">Working days in a week</p>
+            <p className="mt-0.5 font-mono text-lg font-medium tabular-nums text-foreground">
+              {data.schedule.daysPerWeek}
+              <span className="ml-1 text-xs font-normal text-muted-foreground">
+                days · {data.schedule.hoursPerDay} hrs/day
+              </span>
+            </p>
+          </div>
+          <div className="rounded-xl border border-border px-4 py-3">
+            <p className="text-xs text-muted-foreground">Break time</p>
+            <p className="mt-0.5 font-mono text-lg font-medium tabular-nums text-foreground">
+              {formatBreak(data.schedule.breakMinutes)}
+              <span className="ml-1 text-xs font-normal text-muted-foreground">
+                hrs · half day under {data.schedule.halfDayThreshold} hrs
+              </span>
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ---- Validation ---- */}
       <ValidationStrip total={total} wage={previewWage} />
 
@@ -252,4 +281,9 @@ function SalaryFigures({ data, canEdit }: { data: SalaryTabData; canEdit: boolea
       )}
     </div>
   );
+}
+
+/** 60 -> "1.00", 90 -> "1.50". The wireframe labels this field in hours. */
+function formatBreak(minutes: number): string {
+  return (minutes / 60).toFixed(2);
 }

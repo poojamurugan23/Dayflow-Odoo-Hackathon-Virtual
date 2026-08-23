@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { countLeaveDays, type LeaveStatus, type LeaveTypeCode } from "@/lib/leave-days";
+import { expandRange } from "@/lib/month-grid";
 
 /**
  * Time-off reads.
@@ -386,6 +387,80 @@ export async function conflictsForRequests(
 
     const list = [...names];
     out.set(request.id, { count: list.length, names: list.slice(0, 3) });
+  }
+
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Calendar (wireframe image 7)
+// ---------------------------------------------------------------------------
+export type HolidayEntry = { date: string; name: string };
+
+/** Holidays from today onward, for the legend panel's list. */
+export async function getUpcomingHolidays(limit = 6): Promise<HolidayEntry[]> {
+  const supabase = await createClient();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data } = await supabase
+    .from("holidays")
+    .select("date, name")
+    .gte("date", today)
+    .order("date")
+    .limit(limit);
+
+  return ((data ?? []) as HolidayEntry[]).map((row) => ({ date: row.date, name: row.name }));
+}
+
+/** Every holiday in the window, keyed by date, for shading the grid. */
+export async function getHolidayMap(): Promise<Map<string, string>> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("holidays").select("date, name");
+  return new Map(((data ?? []) as HolidayEntry[]).map((row) => [row.date, row.name]));
+}
+
+export type CalendarDay = {
+  typeCode: LeaveTypeCode;
+  status: "approved" | "pending";
+};
+
+/**
+ * One entry per calendar date the caller has leave on, approved or pending.
+ *
+ * RLS scopes leave_requests to the caller's own rows, so this is inherently
+ * own-only — which is what the wireframe's employee calendar shows. Cancelled
+ * and rejected requests are excluded: a rejected request is not time off.
+ */
+export async function getLeaveCalendar(): Promise<Map<string, CalendarDay>> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("leave_requests")
+    .select("leave_type_id, start_date, end_date, status")
+    .in("status", ["approved", "pending"]);
+
+  const { data: types } = await supabase.from("leave_types").select("id, code");
+  const codeOf = new Map(((types ?? []) as { id: string; code: string }[]).map((t) => [t.id, t.code]));
+
+  const out = new Map<string, CalendarDay>();
+
+  for (const row of (data ?? []) as {
+    leave_type_id: string;
+    start_date: string;
+    end_date: string;
+    status: string;
+  }[]) {
+    const typeCode = (codeOf.get(row.leave_type_id) ?? "paid") as LeaveTypeCode;
+    const status = row.status as "approved" | "pending";
+
+    for (const day of expandRange(row.start_date, row.end_date)) {
+      // An approved day wins over a pending one on the same date. That overlap
+      // cannot happen any more (0005's exclusion constraint), but rendering the
+      // stronger state is the right answer if historic data has one.
+      const existing = out.get(day);
+      if (existing?.status === "approved") continue;
+      out.set(day, { typeCode, status });
+    }
   }
 
   return out;

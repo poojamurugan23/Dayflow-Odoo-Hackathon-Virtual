@@ -46,6 +46,21 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* ---------------------------------------------------------------------
+     Functional colour ramp — brand guidelines Part 8.
+     These carry MEANING, not decoration: "present", "on leave", "absent",
+     "running right now". They are therefore fixed, and must not drift when
+     the brand palette changes. Referenced as bg-status-present,
+     text-status-leave, etc. so no component ever holds a hex literal.
+     --------------------------------------------------------------------- */
+  --color-status-present: var(--status-present);
+  --color-status-leave: var(--status-leave);
+  --color-status-absent: var(--status-absent);
+  --color-status-danger: var(--status-danger);
+  --color-status-live: var(--status-live);
+  --color-holiday-soft: var(--holiday-soft);
+  --color-holiday-ink: var(--holiday-ink);
 }
 
 :root {
@@ -81,6 +96,16 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Functional ramp. Same values used since Phase 2 — a status colour that
+     shifted between phases would make screenshots disagree. */
+  --status-present: #1F8A5F;   /* present, half-day, balanced totals */
+  --status-leave: #3E6FA8;     /* on leave */
+  --status-absent: #B8791C;    /* absent, unpaid, missing check-out */
+  --status-danger: #C0392B;    /* rejected, unread badge, errors */
+  --status-live: #D6006E;      /* a session running RIGHT NOW. One element only. */
+  --holiday-soft: #EFE3D0;     /* holiday cell fill */
+  --holiday-ink: #7A5A2E;      /* text on a holiday cell */
 }
 
 .dark {

@@ -16,6 +16,10 @@ export type CurrentUser = {
   organization: { name: string; code: string; logoUrl: string | null } | null;
   /** admin or hr — mirrors the SQL is_manager() used by the RLS policies. */
   isManager: boolean;
+  /** admin only. Narrower than isManager: salary edit is admin-only. */
+  isAdmin: boolean;
+  /** From the auth session, for the Security tab. No extra query. */
+  lastSignInAt: string | null;
 };
 
 /** Shape of the row the query below returns, including the embedded org. */
@@ -80,5 +84,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
         }
       : null,
     isManager: profile.role === "admin" || profile.role === "hr",
+    isAdmin: profile.role === "admin",
+    lastSignInAt: user.last_sign_in_at ?? null,
   };
 }

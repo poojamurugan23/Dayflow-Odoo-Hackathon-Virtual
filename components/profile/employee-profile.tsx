@@ -10,6 +10,7 @@ import { EditProfileForm } from "@/components/profile/edit-profile-form";
 import { FieldRow } from "@/components/profile/field-row";
 import { PrivateInfoTab } from "@/components/profile/private-info-tab";
 import { ResumeTab } from "@/components/profile/resume-tab";
+import { SecurityTab } from "@/components/profile/security-tab";
 import { SalaryTab, type SalaryTabData } from "@/components/salary/salary-tab";
 import { StatusBadge } from "@/components/status-dot";
 import { formatDate, type DayStatus } from "@/lib/display";
@@ -33,6 +34,8 @@ type Props = {
   salary: SalaryTabData | null;
   /** Admin: may edit any wage. Narrower than isManager, which includes HR. */
   isAdmin: boolean;
+  /** Owner-only sign-in details for the Security tab. */
+  security: { loginId: string; email: string; lastSignInAt: string | null } | null;
 };
 
 /**
@@ -49,6 +52,7 @@ export function EmployeeProfile({
   managers,
   salary,
   isAdmin,
+  security,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const stopEditing = useCallback(() => setEditing(false), []);
@@ -58,6 +62,9 @@ export function EmployeeProfile({
   // that an employee may see their OWN, read-only. So the tab appears for an
   // admin on anyone's profile and for anybody on their own — and nowhere else.
   const canSeeSalary = isAdmin || isSelf;
+  // Wireframe image 3: the fourth tab, and only on your own profile. An admin
+  // viewing someone else does NOT get it — see the note in security-tab.tsx.
+  const canSeeSecurity = isSelf && security !== null;
   const canEditAll = isManager;
   // The owner may see their own bank details but not change them; only HR can.
   const bankEditable = isManager;
@@ -126,6 +133,7 @@ export function EmployeeProfile({
                   someone else's profile advertises that there is something
                   there to see. */}
               {canSeeSalary && <TabsTrigger value="salary">Salary Info</TabsTrigger>}
+              {canSeeSecurity && <TabsTrigger value="security">Security</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="resume" className="mt-6">
@@ -145,6 +153,17 @@ export function EmployeeProfile({
             {canSeeSalary && (
               <TabsContent value="salary" className="mt-6">
                 <SalaryTab data={salary} canEdit={isAdmin} isSelf={isSelf} />
+              </TabsContent>
+            )}
+
+            {canSeeSecurity && security && (
+              <TabsContent value="security" className="mt-6">
+                <SecurityTab
+                  loginId={security.loginId}
+                  email={security.email}
+                  lastSignInAt={security.lastSignInAt}
+                  profileId={employee.id}
+                />
               </TabsContent>
             )}
           </Tabs>

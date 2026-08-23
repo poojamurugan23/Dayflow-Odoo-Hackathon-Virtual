@@ -28,6 +28,10 @@
     // A separate clone of the team repo lives here and now holds its own copy
     // of the project. Its "@/*" paths resolve into OUR lib, so leaving it in
     // would fail our typecheck on files we do not own. Also gitignored.
-    "Dayflow-Odoo-Hackathon-Virtual"
+    "Dayflow-Odoo-Hackathon-Virtual",
+    // A snapshot copy of the app the repo owner committed in 9d253f2. Its
+    // "@/*" paths resolve into OUR lib, so typechecking it reports errors on a
+    // frozen duplicate rather than on the code we are editing.
+    "phase-1-5-krithi_build"
   ]
 }
