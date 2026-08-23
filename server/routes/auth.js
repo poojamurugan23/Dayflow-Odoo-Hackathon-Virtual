@@ -4,6 +4,36 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+// GET /api/auth/seed-admin (Temporary endpoint for hackathon)
+router.get('/seed-admin', async (req, res) => {
+  try {
+    const existingAdmin = await User.findOne({ login_id: 'OIPRSH20220001' });
+    if (existingAdmin) {
+      return res.json({ message: 'Admin already exists!', login_id: 'OIPRSH20220001', password: 'Demo@123' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash('Demo@123', salt);
+
+    const adminUser = await User.create({
+      login_id: 'OIPRSH20220001',
+      email: 'hr@dayflow.demo',
+      password: passwordHash,
+      role: 'admin',
+      name: 'Priya Sharma',
+      company_name: 'Odoo India',
+      phone: '+91 98765 43210',
+      department: 'Human Resources',
+      position: 'HR Director',
+      joining_date: new Date('2022-01-15')
+    });
+
+    res.json({ message: 'Admin created successfully!', user: adminUser.login_id, password: 'Demo@123' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
   try {
