@@ -1,47 +1,43 @@
 import { useState, useEffect } from 'react';
 import API_BASE from '../../lib/api';
-import { Loader2, Clock, CheckCircle, ChevronDown } from 'lucide-react';
+import { Loader2, Clock, CheckCircle, ChevronLeft, ChevronRight, Calendar, UserCheck, AlertTriangle } from 'lucide-react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
+} from 'recharts';
 
 export function EmployeeAttendance() {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [todayRecord, setTodayRecord] = useState(null);
   const [showToast, setShowToast] = useState(null);
   
   // Month navigation
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
-    return { year: now.getFullYear(), month: now.getMonth() }; // 0-indexed
+    return { year: now.getFullYear(), month: now.getMonth() };
   });
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const shortMonthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   const formatMonthParam = () => {
     return `${currentMonth.year}-${String(currentMonth.month + 1).padStart(2, '0')}`;
-  };
-
-  const formatDateDisplay = () => {
-    const today = new Date();
-    const day = today.getDate();
-    const month = monthNames[currentMonth.month];
-    return `${day},${month} ${currentMonth.year}`;
   };
 
   const fetchAttendance = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('dayflow_token');
+      // Simulated or real fetch
       const response = await fetch(`${API_BASE}/api/data/attendance?month=${formatMonthParam()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
-        const data = await response.json();
-        setRecords(data);
+        let data = await response.json();
         
-        const today = new Date().toDateString();
-        const todayRec = data.find(r => new Date(r.date).toDateString() === today);
-        setTodayRecord(todayRec);
+        // No mock data injected anymore, real API data only
+
+        // Sort records by date descending
+        data.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setRecords(data);
       }
     } catch (error) {
       console.error('Failed to fetch attendance:', error);
@@ -69,151 +65,247 @@ export function EmployeeAttendance() {
   };
 
   const calcWorkHours = (checkIn, checkOut) => {
-    if (!checkIn || !checkOut) return '-';
+    if (!checkIn || !checkOut) return 0;
     const diffMs = new Date(checkOut) - new Date(checkIn);
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+    return diffMs / (1000 * 60 * 60);
   };
 
-  const calcExtraHours = (checkIn, checkOut) => {
-    if (!checkIn || !checkOut) return '-';
-    const diffMs = new Date(checkOut) - new Date(checkIn);
-    const totalHrs = diffMs / (1000 * 60 * 60);
-    const extra = totalHrs - 8;
-    if (extra <= 0) return '00:00';
-    const h = Math.floor(extra);
-    const m = Math.floor((extra - h) * 60);
+  const formatHours = (hoursNum) => {
+    if (!hoursNum) return '-';
+    const h = Math.floor(hoursNum);
+    const m = Math.round((hoursNum - h) * 60);
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   };
 
-  // Summary stats
-  const daysPresent = records.filter(r => r.status === 'Present' || (r.check_in && !r.check_out)).length;
-  const leavesCount = records.filter(r => r.status === 'Leave').length;
-  const totalWorkingDays = records.length || 0;
+  // Summary stats calculations
+  let totalHoursNum = 0;
+  let totalExtraNum = 0;
+  records.forEach(r => {
+    const hrs = calcWorkHours(r.check_in, r.check_out);
+    totalHoursNum += hrs;
+    if (hrs > 8) totalExtraNum += (hrs - 8);
+  });
+
+  const daysPresent = records.filter(r => r.status === 'Present' || (r.check_in && r.check_out)).length;
+  let paidLeaves = records.filter(r => r.status === 'Leave' || r.status === 'Paid Leave').length;
+  let unpaidLeaves = records.filter(r => r.status === 'Unpaid Leave').length;
+  let sickLeaves = records.filter(r => r.status === 'Sick Leave').length;
+  let daysAbsent = records.filter(r => r.status === 'Absent').length;
+  
+  if (daysAbsent === 0) {
+    const userStr = localStorage.getItem('dayflow_user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const joinDate = user?.joining_date ? new Date(user.joining_date) : new Date(2020, 0, 1);
+
+    const countWeekdays = (year, month, startDay, upToDay) => {
+      let count = 0;
+      for (let d = startDay; d <= upToDay; d++) {
+        const day = new Date(year, month, d).getDay();
+        if (day !== 0 && day !== 6) count++;
+      }
+      return count;
+    };
+    
+    const now = new Date();
+    const isCurrentMonth = currentMonth.year === now.getFullYear() && currentMonth.month === now.getMonth();
+    const isPastMonth = new Date(currentMonth.year, currentMonth.month) < new Date(now.getFullYear(), now.getMonth());
+    
+    if (isCurrentMonth || isPastMonth) {
+       const upToDay = isCurrentMonth ? now.getDate() : new Date(currentMonth.year, currentMonth.month + 1, 0).getDate();
+       let startDay = 1;
+       
+       if (joinDate.getFullYear() === currentMonth.year && joinDate.getMonth() === currentMonth.month) {
+         startDay = joinDate.getDate();
+       } else if (joinDate > new Date(currentMonth.year, currentMonth.month + 1, 0)) {
+         startDay = upToDay + 1; // Future month, so 0 days
+       }
+       
+       const totalWeekdays = countWeekdays(currentMonth.year, currentMonth.month, startDay, upToDay);
+       daysAbsent = Math.max(0, totalWeekdays - daysPresent - paidLeaves - unpaidLeaves - sickLeaves);
+    }
+  }
+
+  // Chart data
+  const chartData = records.slice(0, 7).reverse().map(r => ({
+    date: new Date(r.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+    hours: parseFloat(calcWorkHours(r.check_in, r.check_out).toFixed(2))
+  }));
 
   return (
     <div className="space-y-6">
-      {showToast && (
-        <div className="fixed top-20 right-6 z-50 animate-slide-in">
-          <div className="rounded-lg bg-[#171923] text-white px-5 py-3 text-sm shadow-lg flex items-center gap-2">
-            <CheckCircle size={16} className="text-green-400" />{showToast}
-          </div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="font-serif text-2xl lg:text-3xl font-bold text-[#171923]">Attendance Overview</h1>
+          <p className="mt-1 text-sm text-[#6B7280]">Track your working hours and leave balances.</p>
         </div>
-      )}
-
-      {/* Top Header Row with Title */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-xs">
-        <h1 className="font-serif text-2xl lg:text-3xl font-bold text-[#171923]">Attendance</h1>
-        <p className="mt-0.5 text-xs text-[#6B7280]">Personal monthly attendance log</p>
-      </div>
-
-      {/* Control Bar: Month navigation + Metric Boxes in exact wireframe toolbar layout */}
-      <div className="bg-white rounded-xl border border-gray-200 p-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-xs">
-        {/* Navigation & Month Selector */}
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={goBackMonth} 
-            title="Previous Month"
-            className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-100 text-gray-700 font-bold transition-colors text-sm"
-          >
-            &lt;-
-          </button>
-          <button 
-            onClick={goForwardMonth} 
-            title="Next Month"
-            className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-100 text-gray-700 font-bold transition-colors text-sm"
-          >
-            -&gt;
-          </button>
-
-          {/* Month Selector Dropdown */}
-          <div className="relative">
-            <select
-              value={currentMonth.month}
-              onChange={e => setCurrentMonth(prev => ({ ...prev, month: Number(e.target.value) }))}
-              className="appearance-none bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold py-1.5 pl-3 pr-8 text-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20"
-            >
-              {shortMonthNames.map((m, idx) => (
-                <option key={m} value={idx}>{m} {currentMonth.year}</option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          </div>
-        </div>
-
-        {/* Metric Boxes Toolbar (Exact Wireframe Format) */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Count of days present */}
-          <div className="border border-gray-200 rounded-lg px-4 py-1.5 bg-gray-50/50 text-center">
-            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Count of days present</p>
-            <p className="text-base font-extrabold text-[#502D55] font-serif leading-tight">{daysPresent}</p>
-          </div>
-
-          {/* Leaves count */}
-          <div className="border border-gray-200 rounded-lg px-4 py-1.5 bg-gray-50/50 text-center">
-            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Leaves count</p>
-            <p className="text-base font-extrabold text-[#935073] font-serif leading-tight">{leavesCount}</p>
-          </div>
-
-          {/* Total working days */}
-          <div className="border border-gray-200 rounded-lg px-4 py-1.5 bg-gray-50/50 text-center">
-            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Total working days</p>
-            <p className="text-base font-extrabold text-[#171923] font-serif leading-tight">{totalWorkingDays}</p>
-          </div>
+        
+        {/* Month Selector */}
+        <div className="flex items-center gap-4 bg-white border border-gray-200 rounded-lg p-1.5 shadow-sm">
+          <button onClick={goBackMonth} className="p-1.5 hover:bg-gray-100 rounded text-gray-500"><ChevronLeft size={18} /></button>
+          <span className="text-sm font-bold text-[#171923] min-w-[120px] text-center">
+            {monthNames[currentMonth.month]} {currentMonth.year}
+          </span>
+          <button onClick={goForwardMonth} className="p-1.5 hover:bg-gray-100 rounded text-gray-500"><ChevronRight size={18} /></button>
         </div>
       </div>
 
-      {/* Date Header Indicator */}
-      <div className="px-2">
-        <h2 className="text-sm font-bold text-[#171923] font-serif">{formatDateDisplay()}</h2>
+      {/* Overview Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-green-100 rounded-lg text-green-600"><UserCheck size={20} /></div>
+            <p className="text-xs font-bold text-gray-500 uppercase">Total Working Days</p>
+          </div>
+          <p className="text-2xl font-bold text-[#171923]">{daysPresent}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-yellow-100 rounded-lg text-yellow-600"><AlertTriangle size={20} /></div>
+            <p className="text-xs font-bold text-gray-500 uppercase">Days Absent</p>
+          </div>
+          <p className="text-2xl font-bold text-[#171923]">{daysAbsent}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><Clock size={20} /></div>
+            <p className="text-xs font-bold text-gray-500 uppercase">Total Working Hrs</p>
+          </div>
+          <p className="text-2xl font-bold font-mono text-[#171923]">{formatHours(totalHoursNum)}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-purple-100 rounded-lg text-[#502D55]"><Calendar size={20} /></div>
+            <p className="text-xs font-bold text-gray-500 uppercase">Extra Hours</p>
+          </div>
+          <p className="text-2xl font-bold font-mono text-[#171923]">{formatHours(totalExtraNum)}</p>
+        </div>
       </div>
 
-      {/* Attendance Table (Exact Wireframe Columns: Date, Check In, Check Out, Work Hours, Extra hours) */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
+      {/* Advanced Stats & Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Leaves Breakdown */}
+        <div className="lg:col-span-1 bg-gradient-to-br from-[#171923] to-[#2d3748] rounded-2xl p-6 text-white shadow-md flex flex-col justify-center">
+          <h3 className="text-sm font-bold text-white/80 uppercase tracking-wider mb-6">Leave Balance</h3>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span>Paid Leaves</span>
+                <span className="font-bold">{paidLeaves}</span>
+              </div>
+              <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full bg-green-400 rounded-full" style={{ width: '40%' }}></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span>Sick Leaves</span>
+                <span className="font-bold">{sickLeaves}</span>
+              </div>
+              <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full bg-yellow-400 rounded-full" style={{ width: '20%' }}></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span>Unpaid Leaves</span>
+                <span className="font-bold">{unpaidLeaves}</span>
+              </div>
+              <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full bg-red-400 rounded-full" style={{ width: '10%' }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Working Hours Trend */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-[#171923] mb-4">Daily Working Hours (Recent)</h3>
+          <div className="h-48 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
+                <Tooltip cursor={{ fill: '#F3F4F6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Bar dataKey="hours" fill="#502D55" radius={[4, 4, 0, 0]} maxBarSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Date-wise Detailed Log */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+          <h3 className="text-sm font-bold text-[#171923] flex items-center gap-2">
+            <Clock size={16} className="text-[#502D55]" /> Detailed Logs
+          </h3>
+        </div>
+        
         {loading ? (
-          <div className="flex justify-center items-center h-48">
+          <div className="flex justify-center items-center h-40">
             <Loader2 className="animate-spin text-[#502D55]" size={32} />
           </div>
+        ) : records.length === 0 ? (
+          <div className="p-12 text-center text-gray-500 text-sm">
+            No attendance records found for this month.
+          </div>
         ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50/75">
-                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-[#171923] uppercase tracking-wider">Date</th>
-                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-[#171923] uppercase tracking-wider">Check In</th>
-                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-[#171923] uppercase tracking-wider">Check Out</th>
-                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-[#171923] uppercase tracking-wider">Work Hours</th>
-                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-[#171923] uppercase tracking-wider">Extra hours</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {records.map((r, i) => (
-                    <tr key={r._id || i} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-5 py-3.5 font-medium text-[#171923]">
-                        {new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-50/50 text-gray-500 border-b border-gray-100">
+                <tr>
+                  <th className="px-6 py-3 font-semibold">Date</th>
+                  <th className="px-6 py-3 font-semibold">Check In</th>
+                  <th className="px-6 py-3 font-semibold">Check Out</th>
+                  <th className="px-6 py-3 font-semibold">Work Hours</th>
+                  <th className="px-6 py-3 font-semibold">Extra</th>
+                  <th className="px-6 py-3 font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {records.map(record => {
+                  const hrs = calcWorkHours(record.check_in, record.check_out);
+                  const extra = hrs > 8 ? hrs - 8 : null;
+                  const dateObj = new Date(record.date);
+                  
+                  return (
+                    <tr key={record._id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-gray-900">{dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</div>
+                        <div className="text-xs text-gray-500">{dateObj.toLocaleDateString('en-US', { weekday: 'long' })}</div>
                       </td>
-                      <td className="px-5 py-3.5 text-[#171923] font-medium">
-                        {r.check_in ? new Date(r.check_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '-'}
+                      <td className="px-6 py-4">
+                        {record.check_in ? (
+                          <span className="font-mono text-gray-700">{new Date(record.check_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        ) : '-'}
                       </td>
-                      <td className="px-5 py-3.5 text-[#171923] font-medium">
-                        {r.check_out ? new Date(r.check_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '-'}
+                      <td className="px-6 py-4">
+                        {record.check_out ? (
+                          <span className="font-mono text-gray-700">{new Date(record.check_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        ) : '-'}
                       </td>
-                      <td className="px-5 py-3.5 text-[#171923] font-semibold">{calcWorkHours(r.check_in, r.check_out)}</td>
-                      <td className="px-5 py-3.5 text-[#502D55] font-semibold">{calcExtraHours(r.check_in, r.check_out)}</td>
+                      <td className="px-6 py-4">
+                        <span className="font-mono font-medium text-gray-900">{formatHours(hrs)}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {extra ? <span className="text-green-600 font-mono text-xs font-bold">+{formatHours(extra)}</span> : '-'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                          record.status === 'Present' ? 'bg-green-50 text-green-700 border border-green-200' :
+                          record.status === 'Leave' ? 'bg-sky-50 text-sky-700 border border-sky-200' :
+                          'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                        }`}>
+                          {record.status}
+                        </span>
+                      </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {records.length === 0 && (
-              <div className="p-12 text-center">
-                <Clock className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-                <p className="text-sm text-[#6B7280]">No attendance records for {monthNames[currentMonth.month]} {currentMonth.year}.</p>
-              </div>
-            )}
-          </>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import API_BASE from '../../lib/api';
+import API_BASE, { getAvatarUrl } from '../../lib/api';
 import { DEPARTMENTS, formatDate } from '../../lib/mockData';
 import { Search, Plus, LayoutGrid, List, Eye, Edit3, X, Loader2, ChevronDown, ChevronUp, Mail, Phone, Briefcase, FileText, Download } from 'lucide-react';
 import { EmployeeProfileModal } from '../../components/EmployeeProfileModal';
@@ -151,12 +151,11 @@ export function AdminEmployees() {
           manager: 'HR Department',
           status: emp.status || 'Active',
           joiningDate: emp.joining_date || new Date(),
-          avatar: emp.name ? emp.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : 'EM',
+          avatar: getAvatarUrl(emp),
           profile_picture: emp.profile_picture || null
         }));
 
         setEmployees(mapped.filter(e => e.role === 'employee'));
-        setHrs(mapped.filter(e => e.role === 'hr'));
       }
     } catch (error) {
       console.error('Failed to fetch employees:', error);
@@ -193,9 +192,7 @@ export function AdminEmployees() {
           joiningDate: form.joiningDate.value,
           monthWage: Number(monthWage) || 0,
           dob: form.dob.value,
-          gender: form.gender.value,
-          profilePicture: form.profilePicture.value,
-          resumeUrl: form.resumeUrl.value
+          gender: form.gender.value
         })
       });
 
@@ -270,15 +267,17 @@ export function AdminEmployees() {
     >
       <div className="flex items-center gap-4 min-w-0">
         <div className="relative shrink-0">
-          {emp.profile_picture ? (
-            <img src={emp.profile_picture} alt={emp.name} className="h-12 w-12 rounded-full object-cover shadow-sm border border-gray-100" />
-          ) : (
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#502D55] to-[#935073] text-white flex items-center justify-center text-sm font-bold shadow-sm">
-              {emp.avatar}
-            </div>
-          )}
+          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#502D55] to-[#935073] flex items-center justify-center text-sm font-bold shadow-sm overflow-hidden">
+            <img src={emp.avatar} alt={emp.name} className="w-full h-full object-cover" crossOrigin="anonymous" />
+          </div>
           <div className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-white bg-white">
-            <span className={`flex h-2.5 w-2.5 rounded-full ${emp.status === 'Active' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+            {emp.status === 'On Leave' ? (
+              <span className="flex items-center justify-center h-4 w-4 rounded-full bg-blue-100 text-blue-500 shadow-sm border border-blue-200" title="On Leave">
+                ✈️
+              </span>
+            ) : (
+              <span className={`flex h-2.5 w-2.5 rounded-full ${emp.status === 'Present' ? 'bg-green-500' : 'bg-yellow-500'}`} title={emp.status} />
+            )}
           </div>
         </div>
         <div className="min-w-0 flex-1">
@@ -361,17 +360,6 @@ export function AdminEmployees() {
             {filteredEmployees.map(emp => renderProfileCard(emp, false))}
             {filteredEmployees.length === 0 && (
               <div className="p-12 text-center bg-white rounded-xl border border-gray-200"><p className="text-sm text-[#6B7280]">No employees match your filters.</p></div>
-            )}
-          </div>
-        </div>
-
-        {/* HR Section */}
-        <div>
-          <h2 className="text-lg font-bold text-[#171923] mb-4 border-b pb-2 mt-8">HR Team</h2>
-          <div className="space-y-3">
-            {filteredHrs.map(hr => renderProfileCard(hr, true))}
-            {filteredHrs.length === 0 && (
-              <div className="p-12 text-center bg-white rounded-xl border border-gray-200"><p className="text-sm text-[#6B7280]">No HR profiles found.</p></div>
             )}
           </div>
         </div>
@@ -517,21 +505,7 @@ export function AdminEmployees() {
                   <SalaryPreview monthWage={monthWage} />
                 </div>
 
-                {/* Section 4: Attachments */}
-                <div>
-                  <h4 className="text-xs font-bold text-[#502D55] uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">Attachments & Images</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Profile Picture URL</label>
-                      <input name="profilePicture" type="url" placeholder="https://example.com/photo.jpg" className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all placeholder:text-gray-400" />
-                      <p className="text-[10px] text-gray-500 mt-1">Provide a URL for the high quality profile picture.</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-[#171923] mb-1.5">Resume URL (Optional)</label>
-                      <input name="resumeUrl" type="url" placeholder="https://drive.google.com/..." className="block w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-[#502D55] focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 transition-all placeholder:text-gray-400" />
-                    </div>
-                  </div>
-                </div>
+
 
                 <div className="flex justify-end gap-3 pt-6 mt-4 border-t border-gray-100">
                   <button type="button" onClick={() => { setShowAddModal(false); setMonthWage(''); }} className="rounded-lg bg-gray-50 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors">Cancel</button>

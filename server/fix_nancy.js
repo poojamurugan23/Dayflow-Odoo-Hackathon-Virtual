@@ -1,0 +1,1 @@
+const mongoose = require('mongoose'); mongoose.connect('mongodb://127.0.0.1:27017/dayflow').then(async () => { const User = require('./models/User'); await User.updateMany({ name: /nancy/i }, { $set: { profile_picture: 'https://randomuser.me/api/portraits/women/44.jpg' } }); console.log('Updated Nancy'); process.exit(0); });

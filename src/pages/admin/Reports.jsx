@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { Download, FileText, Filter } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import API_BASE from '../../lib/api';
 
 const attendanceData = [
   { month: 'Mar', present: 210, absent: 18, leave: 20 },
@@ -39,17 +43,88 @@ const COLORS = ['#502D55', '#935073', '#A78BA3', '#3B82F6', '#F59E0B', '#10B981'
 
 export function AdminReports() {
   const [activeReport, setActiveReport] = useState('attendance');
+  const [employees, setEmployees] = useState([]);
+  const [showToast, setShowToast] = useState(null);
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const token = localStorage.getItem('dayflow_token');
+        const response = await fetch(`${API_BASE}/api/data/employees`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setEmployees(data.filter(u => u.role !== 'admin'));
+        }
+      } catch (err) {
+        console.error('Failed to fetch employees', err);
+      }
+    };
+    fetchEmployees();
+  }, []);
+
+  const toast = (msg) => { setShowToast(msg); setTimeout(() => setShowToast(null), 3000); };
+
+  // Generate real-time department data
+  const realDeptData = employees.reduce((acc, emp) => {
+    const dept = emp.department || 'Other';
+    acc[dept] = (acc[dept] || 0) + 1;
+    return acc;
+  }, {});
+  const dynamicDeptData = Object.keys(realDeptData).length > 0 
+    ? Object.keys(realDeptData).map(k => ({ name: k, value: realDeptData[k] }))
+    : deptData;
+
+  const totalEmployees = employees.length || 248;
+
+  // Handle Exports
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Organization Analytics Report", 14, 15);
+    
+    // Add simple summary
+    autoTable(doc, {
+      head: [['Metric', 'Value']],
+      body: [
+        ['Total Employees', totalEmployees],
+        ...dynamicDeptData.map(d => [`Dept: ${d.name}`, d.value])
+      ],
+      startY: 20
+    });
+    
+    doc.save("DayFlow_Analytics_Report.pdf");
+    toast('Exported to PDF successfully');
+  };
+
+  const handleExportExcel = () => {
+    const tableData = dynamicDeptData.map(d => ({
+      Department: d.name,
+      'Number of Employees': d.value,
+      'Percentage': ((d.value / totalEmployees) * 100).toFixed(1) + '%'
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(tableData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Analytics");
+    XLSX.writeFile(workbook, "DayFlow_Analytics.xlsx");
+    toast('Exported to Excel successfully');
+  };
 
   return (
     <div className="space-y-6">
+      {showToast && (
+        <div className="fixed top-20 right-6 z-50">
+          <div className="rounded-lg bg-[#171923] text-white px-5 py-3 text-sm shadow-lg">{showToast}</div>
+        </div>
+      )}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="font-serif text-2xl lg:text-3xl font-bold text-[#171923]">Reports & Analytics</h1>
           <p className="mt-1 text-sm text-[#6B7280]">Comprehensive workforce insights and reporting.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm"><Download size={16} /> Export PDF</button>
-          <button className="inline-flex items-center gap-2 rounded-lg bg-[#502D55] px-4 py-2 text-sm font-medium text-white hover:bg-[#5a3256] shadow-sm"><FileText size={16} /> Export Excel</button>
+          <button onClick={handleExportPDF} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm"><Download size={16} /> Export PDF</button>
+          <button onClick={handleExportExcel} className="inline-flex items-center gap-2 rounded-lg bg-[#502D55] px-4 py-2 text-sm font-medium text-white hover:bg-[#5a3256] shadow-sm"><FileText size={16} /> Export Excel</button>
         </div>
       </div>
 
@@ -147,8 +222,8 @@ export function AdminReports() {
             <h3 className="text-base font-semibold text-[#171923] font-serif mb-6">Department Distribution</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
-                <Pie data={deptData} cx="50%" cy="50%" outerRadius={110} paddingAngle={3} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
-                  {deptData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                <Pie data={dynamicDeptData} cx="50%" cy="50%" outerRadius={110} paddingAngle={3} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                  {dynamicDeptData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip />
               </PieChart>
@@ -157,7 +232,7 @@ export function AdminReports() {
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h3 className="text-base font-semibold text-[#171923] font-serif mb-4">Department Breakdown</h3>
             <div className="space-y-3">
-              {deptData.map((d, i) => (
+              {dynamicDeptData.map((d, i) => (
                 <div key={d.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
@@ -165,7 +240,7 @@ export function AdminReports() {
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-32 h-2 rounded-full bg-gray-100 overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${(d.value / 248) * 100}%`, backgroundColor: COLORS[i % COLORS.length] }}></div>
+                      <div className="h-full rounded-full" style={{ width: `${(d.value / totalEmployees) * 100}%`, backgroundColor: COLORS[i % COLORS.length] }}></div>
                     </div>
                     <span className="text-sm font-medium text-[#171923] w-8 text-right">{d.value}</span>
                   </div>

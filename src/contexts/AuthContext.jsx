@@ -9,38 +9,38 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const reloadUser = useCallback(async () => {
+    const token = localStorage.getItem('dayflow_token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      } else {
+        // Token invalid or expired
+        localStorage.removeItem('dayflow_token');
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Initialize from JWT
   useEffect(() => {
-    const fetchProfile = async () => {
-      const token = localStorage.getItem('dayflow_token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`${BACKEND_URL}/me`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-        } else {
-          // Token invalid or expired
-          localStorage.removeItem('dayflow_token');
-        }
-      } catch (error) {
-        console.error('Failed to fetch profile:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, []);
+    reloadUser();
+  }, [reloadUser]);
 
   const login = useCallback(async (loginIdOrEmail, password) => {
     setLoading(true);
@@ -94,10 +94,12 @@ export function AuthProvider({ children }) {
         throw new Error(data.message || 'Signup failed');
       }
 
-      setUser(data.user);
-      localStorage.setItem('dayflow_token', data.token);
+      if (data.token) {
+        setUser(data.user);
+        localStorage.setItem('dayflow_token', data.token);
+      }
       setLoading(false);
-      return data.user;
+      return data;
     } catch (error) {
       setLoading(false);
       throw error;
@@ -116,6 +118,7 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
+    reloadUser,
     isAuthenticated: !!user,
   };
 

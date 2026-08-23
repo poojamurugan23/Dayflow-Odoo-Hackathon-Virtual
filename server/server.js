@@ -1,14 +1,17 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const compression = require('compression');
 const path = require('path');
 require('dotenv').config();
 
 const app = express();
 
 // Middleware
+app.use(compression()); // Add compression for faster response sizes
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Database Connection
 const PORT = process.env.PORT || 5000;
@@ -94,6 +97,14 @@ app.post('/api/import-all', async (req, res) => {
     console.error('Import error:', error);
     res.status(500).json({ error: error.message });
   }
+});
+
+// Serve static files from the React frontend app
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// Anything that doesn't match the API routes should send back the index.html file
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
 // Start Server

@@ -59,10 +59,10 @@ router.get('/seed-all', async (req, res) => {
   }
 });
 
-// POST /api/auth/signup
+// POST /api/auth/signup (HR ONLY - Requires Super Admin Approval)
 router.post('/signup', async (req, res) => {
   try {
-    const { email, password, role, name, companyName, phone } = req.body;
+    const { email, password, name, companyName, phone } = req.body;
 
     // Check if user exists
     const existingUser = await User.findOne({ email });
@@ -70,15 +70,83 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'User with this email already exists' });
     }
 
-    // Generate login ID: OI + [First2 of FirstName + First2 of LastName] + [Year of Joining] + [Serial]
-    // Example: OIJODO20220001
-    // OI = Odoo India (always fixed)
-    // JODO = JO(hn) + DO(e) = first 2 letters of first name + first 2 letters of last name
-    // 2022 = Year of Joining
-    // 0001 = Serial Number of Joining for that Year
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required' });
+    }
 
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create user with a temporary pending login ID (Final ID generated on approval)
+    const pendingId = `PENDING_HR_${Date.now()}`;
+
+    const user = new User({
+      email,
+      password: hashedPassword,
+      role: 'hr', // Strictly HR
+      name,
+      company_name: companyName || 'Odoo India',
+      phone,
+      login_id: pendingId,
+      department: 'Human Resources',
+      position: 'HR Manager',
+      is_approved: false,
+      must_change_password: false
+    });
+
+    await user.save();
+
+    // Create an in-app notification for Super Admin
+    const Notification = require('../models/Notification');
+    // We assume Admin has role 'admin'. We can fetch the first admin to assign the notification.
+    const superAdmin = await User.findOne({ role: 'admin' });
+    if (superAdmin) {
+      await Notification.create({
+        employee_id: superAdmin._id,
+        title: 'New HR Registration Pending',
+        message: `A new HR manager (${name}) has registered and is awaiting approval.`,
+        type: 'info'
+      });
+    }
+
+    res.status(201).json({ 
+      message: 'Registration successful! Your account is pending Super Admin approval.',
+      user: { id: user._id, name: user.name, role: user.role }
+    });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({ message: 'Server error during signup' });
+  }
+});
+
+// POST /api/auth/approve-hr (Super Admin Only)
+router.post('/approve-hr', async (req, res) => {
+  try {
+    // Basic auth check
+    const authHeader = req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ message: 'Only Super Admin can approve HRs' });
+    }
+
+    const { hrId } = req.body; // The MongoDB _id of the HR user
+    const hrUser = await User.findById(hrId);
+
+    if (!hrUser || hrUser.role !== 'hr') {
+      return res.status(404).json({ message: 'HR user not found' });
+    }
+    if (hrUser.is_approved) {
+      return res.status(400).json({ message: 'HR is already approved' });
+    }
+
+    // Generate login ID: OI + [First 2 of First Name + First 2 of Last Name] + [Year] + [Serial]
     // 1. Company Initials (e.g., Odoo India -> OI)
-    const actualCompanyName = companyName || 'Odoo India';
+    const actualCompanyName = hrUser.company_name || 'Odoo India';
     const compWords = actualCompanyName.trim().split(/\s+/);
     let compCode = "OI";
     if (compWords.length >= 2) {
@@ -89,8 +157,8 @@ router.post('/signup', async (req, res) => {
     
     // 2. Name code: first 2 letters of first name + first 2 letters of last name
     let nameCode = 'XXXX';
-    if (name) {
-      const nameParts = name.trim().split(/\s+/);
+    if (hrUser.name) {
+      const nameParts = hrUser.name.trim().split(/\s+/);
       if (nameParts.length >= 2) {
         const firstPart = nameParts[0].substring(0, 2).toUpperCase().padEnd(2, 'X');
         const lastPart = nameParts[nameParts.length - 1].substring(0, 2).toUpperCase().padEnd(2, 'X');
@@ -103,48 +171,28 @@ router.post('/signup', async (req, res) => {
     // 3. Year of joining (current year for new signups)
     const joiningYear = new Date().getFullYear();
     
-    // 4. Serial number: count how many users joined this year and increment
+    // 4. Serial number: count how many APPROVED users joined this year and increment
     const startOfYear = new Date(joiningYear, 0, 1);
     const endOfYear = new Date(joiningYear + 1, 0, 1);
     const countThisYear = await User.countDocuments({ 
-      joining_date: { $gte: startOfYear, $lt: endOfYear } 
+      joining_date: { $gte: startOfYear, $lt: endOfYear },
+      is_approved: true // Only count approved users for serials
     });
     const serial = (countThisYear + 1).toString().padStart(4, '0');
     
-    const login_id = `${compCode}${nameCode}${joiningYear}${serial}`;
+    const finalLoginId = `${compCode}${nameCode}${joiningYear}${serial}`;
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    hrUser.login_id = finalLoginId;
+    hrUser.serial_number = countThisYear + 1;
+    hrUser.is_approved = true;
+    hrUser.joining_date = new Date(); // Set official joining date to approval date
 
-    // Create user
-    const user = new User({
-      email,
-      password: hashedPassword,
-      role: role || 'employee',
-      name,
-      company_name: companyName,
-      phone,
-      login_id
-    });
+    await hrUser.save();
 
-    await user.save();
-
-    // Generate JWT
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET || 'fallback_secret',
-      { expiresIn: '7d' }
-    );
-
-    // Return user without password
-    const userObj = user.toObject();
-    delete userObj.password;
-
-    res.status(201).json({ token, user: userObj });
+    res.json({ message: 'HR approved successfully', login_id: finalLoginId });
   } catch (error) {
-    console.error('Signup error:', error);
-    res.status(500).json({ message: 'Server error during signup' });
+    console.error('Approve HR error:', error);
+    res.status(500).json({ message: 'Server error during approval' });
   }
 });
 
@@ -160,6 +208,11 @@ router.post('/login', async (req, res) => {
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Prevent login if not approved
+    if (!user.is_approved) {
+      return res.status(403).json({ message: 'Account is pending Super Admin approval' });
     }
 
     // Check password
@@ -245,6 +298,7 @@ router.put('/change-password', async (req, res) => {
     // Hash new password and save
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
+    user.must_change_password = false; // Reset the flag
     await user.save();
 
     res.json({ message: 'Password changed successfully' });

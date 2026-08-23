@@ -5,23 +5,6 @@ import { Users, UserCheck, UserMinus, FileClock, ArrowRight, Clock, LogIn, LogOu
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 
-const attendanceTrend = [
-  { day: 'Mon', present: 230, absent: 18 },
-  { day: 'Tue', present: 225, absent: 23 },
-  { day: 'Wed', present: 235, absent: 13 },
-  { day: 'Thu', present: 221, absent: 27 },
-  { day: 'Fri', present: 218, absent: 30 },
-];
-
-const deptData = [
-  { name: 'Engineering', value: 85, color: '#502D55' },
-  { name: 'Product', value: 32, color: '#935073' },
-  { name: 'HR', value: 18, color: '#A78BA3' },
-  { name: 'Finance', value: 25, color: '#3B82F6' },
-  { name: 'Marketing', value: 42, color: '#F59E0B' },
-  { name: 'Operations', value: 46, color: '#10B981' },
-];
-
 export function AdminDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -31,6 +14,8 @@ export function AdminDashboard() {
     presentToday: 0,
     pendingLeaves: 0,
     approvedLeaves: 0,
+    deptData: [],
+    attendanceTrend: []
   });
   
   const [pendingRequests, setPendingRequests] = useState([]);
@@ -179,7 +164,7 @@ export function AdminDashboard() {
             <button onClick={() => navigate('/admin/reports')} className="text-xs font-medium text-[#502D55] hover:text-[#935073] flex items-center gap-1">View Reports <ArrowRight size={14} /></button>
           </div>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={attendanceTrend} barGap={6}>
+            <BarChart data={metrics.attendanceTrend} barGap={6}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
               <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={false} tickLine={false} />
@@ -191,23 +176,37 @@ export function AdminDashboard() {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-base font-semibold text-[#171923] font-serif mb-4">Department Split</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <PieChart>
-              <Pie data={deptData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
-                {deptData.map((d, i) => <Cell key={i} fill={d.color} />)}
-              </Pie>
-              <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '12px' }} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
-            {deptData.map(d => (
-              <div key={d.name} className="flex items-center gap-2 text-xs text-[#6B7280]">
-                <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }}></span>
-                {d.name}
+          <h3 className="text-base font-semibold text-[#171923] font-serif mb-6">Department Split</h3>
+          {metrics.deptData.length > 0 ? (
+            <div className="flex flex-col items-center">
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie
+                    data={metrics.deptData}
+                    cx="50%" cy="50%"
+                    innerRadius={50} outerRadius={70}
+                    paddingAngle={3} dataKey="value" stroke="none"
+                  >
+                    {metrics.deptData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+              
+              <div className="w-full mt-6 grid grid-cols-2 gap-y-3">
+                {metrics.deptData.map(dept => (
+                  <div key={dept.name} className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: dept.color }}></span>
+                    <span className="text-xs text-[#6B7280]">{dept.name}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full text-sm text-gray-500">No data available</div>
+          )}
         </div>
       </div>
 

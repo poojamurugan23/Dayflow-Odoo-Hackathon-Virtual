@@ -21,12 +21,28 @@ export function AdminTimeOff() {
   const [rejectModal, setRejectModal] = useState(null); // holds leave._id
   const [rejectComment, setRejectComment] = useState('');
 
-  // Allocation (local state — admin sets per-employee quotas)
-  const [allocations, setAllocations] = useState([
-    { id: '1', empName: 'Priya Sharma', empId: 'OIPRSH20220001', paidAllocated: 24, paidUsed: 4, sickAllocated: 7, sickUsed: 1 },
-    { id: '2', empName: 'Arjun Mehta', empId: 'OIARME20230001', paidAllocated: 24, paidUsed: 8, sickAllocated: 7, sickUsed: 2 },
-    { id: '3', empName: 'Pooja Singh', empId: 'OIPOOJ20260001', paidAllocated: 24, paidUsed: 0, sickAllocated: 7, sickUsed: 0 },
-  ]);
+  const allocations = employees.map(emp => {
+    let paidUsed = 0;
+    let sickUsed = 0;
+    
+    leaves.forEach(l => {
+      if (l.employee_id?._id === emp._id && l.status === 'Approved') {
+        const days = Math.ceil((new Date(l.end_date) - new Date(l.start_date)) / (1000 * 60 * 60 * 24)) + 1;
+        if (l.leave_type === 'Paid time off' || l.leave_type === 'Paid Leave') paidUsed += days;
+        if (l.leave_type === 'Sick leave' || l.leave_type === 'Sick Leave') sickUsed += days;
+      }
+    });
+
+    return {
+      id: emp._id,
+      empName: emp.name,
+      empId: emp.login_id || emp.employeeId || 'N/A',
+      paidAllocated: emp.paid_leave_allocated || 24,
+      paidUsed,
+      sickAllocated: emp.sick_leave_allocated || 7,
+      sickUsed
+    };
+  });
   const [showAllocModal, setShowAllocModal] = useState(false);
   const [allocForm, setAllocForm] = useState({ employeeId: '', paidDays: 24, sickDays: 7 });
   const [allocLoading, setAllocLoading] = useState(false);
@@ -129,38 +145,47 @@ export function AdminTimeOff() {
   };
 
   // ── Create Allocation ────────────────────────────────────
-  const handleCreateAllocation = (e) => {
+  const handleAllocSubmit = async (e) => {
     e.preventDefault();
+    if (!allocForm.employeeId) { toast('Select an employee.'); return; }
     setAllocLoading(true);
-    const emp = employees.find(e => e._id === allocForm.employeeId);
-    const newAlloc = {
-      id: String(Date.now()),
-      empName: emp?.name || 'Unknown',
-      empId: emp?.login_id || '—',
-      paidAllocated: Number(allocForm.paidDays) || 24,
-      paidUsed: 0,
-      sickAllocated: Number(allocForm.sickDays) || 7,
-      sickUsed: 0
-    };
-    setAllocations([newAlloc, ...allocations]);
-    toast('Leave allocation added.');
-    setShowAllocModal(false);
-    setAllocLoading(false);
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/data/employees/${allocForm.employeeId}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paid_leave_allocated: Number(allocForm.paidDays) || 24,
+          sick_leave_allocated: Number(allocForm.sickDays) || 7
+        })
+      });
+      
+      if (res.ok) {
+        toast('Leave allocation updated.');
+        setShowAllocModal(false);
+        fetchData();
+      } else {
+        const err = await res.json();
+        toast(`Error: ${err.message}`);
+      }
+    } catch (err) {
+      toast('Failed to update allocation.');
+    } finally {
+      setAllocLoading(false);
+    }
   };
 
   // ── Filter ───────────────────────────────────────────────
   const filteredLeaves = leaves.filter(l => {
+    // Show all valid requests
+    if (!l.employee_id) return false;
+
     if (!search) return true;
     const name = (l.employee_id?.name || '').toLowerCase();
     const id = (l.employee_id?.login_id || '').toLowerCase();
     const type = (l.type || '').toLowerCase();
     const s = search.toLowerCase();
     return name.includes(s) || id.includes(s) || type.includes(s);
-  });
-
-  const filteredAllocs = allocations.filter(a => {
-    if (!search) return true;
-    return a.empName.toLowerCase().includes(search.toLowerCase()) || a.empId.toLowerCase().includes(search.toLowerCase());
   });
 
   const statusBadge = (status) => {
@@ -186,24 +211,8 @@ export function AdminTimeOff() {
         <p className="mt-1 text-sm text-[#6B7280]">Review, approve, or reject employee time-off requests. Manage leave allocations.</p>
       </div>
 
-      {/* Sub-tabs: Time Off | Allocation */}
-      <div className="flex items-center gap-2 border-b border-gray-200">
-        {['timeoff', 'allocation'].map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg transition-all capitalize ${activeTab === tab ? 'bg-[#502D55] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-            {tab === 'timeoff' ? 'Time Off' : 'Allocation'}
-          </button>
-        ))}
-      </div>
-
-      {/* Action Bar: NEW + Searchbar */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <button
-          onClick={() => { setShowNewModal(true); }}
-          className="inline-flex items-center gap-2 rounded-lg bg-[#C05688] hover:bg-[#a84472] text-white px-5 py-2.5 text-sm font-bold shadow-sm transition-colors"
-        >
-          <Plus size={16} /> NEW
-        </button>
+      {/* Action Bar: Searchbar */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col sm:flex-row justify-end items-start sm:items-center gap-3">
         <div className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input type="text" value={search} onChange={e => setSearch(e.target.value)}
@@ -227,8 +236,7 @@ export function AdminTimeOff() {
       </div>
 
       {/* TIME OFF TAB — Table with Name, Start Date, End Date, Time off Type, Status, Actions */}
-      {activeTab === 'timeoff' && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
           {loading ? (
             <div className="flex justify-center items-center h-48">
               <Loader2 className="animate-spin text-[#502D55]" size={32} />
@@ -318,149 +326,8 @@ export function AdminTimeOff() {
             </div>
           )}
         </div>
-      )}
 
-      {/* ALLOCATION TAB */}
-      {activeTab === 'allocation' && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/75">
-                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-[#171923] uppercase tracking-wider">Employee</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-[#171923] uppercase tracking-wider">Employee ID</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-[#171923] uppercase tracking-wider">Paid Time Off</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-[#171923] uppercase tracking-wider">Sick Time Off</th>
-                  <th className="text-center px-5 py-3.5 text-xs font-semibold text-[#171923] uppercase tracking-wider">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredAllocs.map(a => (
-                  <tr key={a.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-[#502D55] text-white flex items-center justify-center text-xs font-bold">
-                          {a.empName.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                        </div>
-                        <span className="font-semibold text-[#171923]">{a.empName}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 font-mono text-xs text-gray-600">{a.empId}</td>
-                    <td className="px-5 py-3.5 text-blue-700 font-medium">
-                      {a.paidAllocated} Days <span className="text-xs text-gray-400 font-normal">({a.paidAllocated - a.paidUsed} remaining)</span>
-                    </td>
-                    <td className="px-5 py-3.5 text-cyan-700 font-medium">
-                      {a.sickAllocated} Days <span className="text-xs text-gray-400 font-normal">({a.sickAllocated - a.sickUsed} remaining)</span>
-                    </td>
-                    <td className="px-5 py-3.5 text-center">
-                      <span className="inline-flex items-center rounded-full bg-green-50 border border-green-200 px-2.5 py-0.5 text-xs font-semibold text-green-700">Active</span>
-                    </td>
-                  </tr>
-                ))}
-                {filteredAllocs.length === 0 && (
-                  <tr><td colSpan={5} className="text-center p-8 text-sm text-gray-400">No allocations found.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
-      {/* ── NEW Time Off Modal (Admin creates on behalf of employee) ── */}
-      {showNewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowNewModal(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-              <h3 className="text-base font-bold text-[#171923] font-serif">
-                {activeTab === 'timeoff' ? 'Create Time Off Request' : 'New Leave Allocation'}
-              </h3>
-              <button onClick={() => setShowNewModal(false)} className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-400">
-                <X size={18} />
-              </button>
-            </div>
-
-            {activeTab === 'timeoff' ? (
-              <form onSubmit={handleCreateNew} className="p-6 space-y-4">
-                {/* Employee */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Employee</label>
-                  <select value={newForm.employeeId} onChange={e => setNewForm({ ...newForm, employeeId: e.target.value })} required
-                    className="block w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm focus:border-[#502D55] focus:outline-none">
-                    <option value="">Select employee...</option>
-                    {employees.map(emp => (
-                      <option key={emp._id} value={emp._id}>{emp.name} ({emp.login_id})</option>
-                    ))}
-                  </select>
-                </div>
-                {/* Time off Type */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Time off Type</label>
-                  <select value={newForm.leaveType} onChange={e => setNewForm({ ...newForm, leaveType: e.target.value })}
-                    className="block w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm focus:border-[#502D55] focus:outline-none">
-                    {LEAVE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                {/* Dates */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Start Date</label>
-                    <input type="date" required value={newForm.startDate} onChange={e => setNewForm({ ...newForm, startDate: e.target.value })}
-                      className="block w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm focus:border-[#502D55] focus:outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">End Date</label>
-                    <input type="date" required value={newForm.endDate} onChange={e => setNewForm({ ...newForm, endDate: e.target.value })}
-                      className="block w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm focus:border-[#502D55] focus:outline-none" />
-                  </div>
-                </div>
-                {/* Reason */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Reason / Remarks</label>
-                  <textarea rows={2} value={newForm.reason} onChange={e => setNewForm({ ...newForm, reason: e.target.value })}
-                    placeholder="Reason for leave..."
-                    className="block w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm focus:border-[#502D55] focus:outline-none" />
-                </div>
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                  <button type="button" onClick={() => setShowNewModal(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-                  <button type="submit" disabled={newLoading} className="rounded-lg bg-[#502D55] px-5 py-2 text-sm font-semibold text-white hover:bg-[#3e2342] flex items-center gap-2 disabled:opacity-70">
-                    {newLoading && <Loader2 className="animate-spin" size={15} />}Save Entry
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <form onSubmit={handleCreateAllocation} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Employee</label>
-                  <select value={allocForm.employeeId} onChange={e => setAllocForm({ ...allocForm, employeeId: e.target.value })} required
-                    className="block w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm focus:border-[#502D55] focus:outline-none">
-                    <option value="">Select employee...</option>
-                    {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.name} ({emp.login_id})</option>)}
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Paid Leave Days</label>
-                    <input type="number" value={allocForm.paidDays} onChange={e => setAllocForm({ ...allocForm, paidDays: e.target.value })} required
-                      className="block w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm focus:border-[#502D55] focus:outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Sick Leave Days</label>
-                    <input type="number" value={allocForm.sickDays} onChange={e => setAllocForm({ ...allocForm, sickDays: e.target.value })} required
-                      className="block w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm focus:border-[#502D55] focus:outline-none" />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                  <button type="button" onClick={() => setShowNewModal(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-                  <button type="submit" disabled={allocLoading} className="rounded-lg bg-[#502D55] px-5 py-2 text-sm font-semibold text-white hover:bg-[#3e2342] flex items-center gap-2 disabled:opacity-70">
-                    {allocLoading && <Loader2 className="animate-spin" size={15} />}Save Allocation
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* ── Reject Reason Modal ── */}
       {rejectModal && (

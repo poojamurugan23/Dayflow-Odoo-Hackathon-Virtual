@@ -40,7 +40,7 @@ export function Signup() {
     }
 
     try {
-      await signup(email, password, 'admin', name, companyName, phone);
+      await signup(email, password, 'hr', name, companyName, phone);
       setSuccess(true);
       setTimeout(() => {
         navigate('/login');
@@ -57,14 +57,14 @@ export function Signup() {
       <div className="flex min-h-screen bg-[#F3F4F6] items-center justify-center">
         <div className="bg-white p-10 rounded-2xl shadow-xl border border-gray-100 max-w-md w-full text-center">
           <div className="mb-6 flex justify-center">
-            <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
-              <svg className="h-8 w-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            <div className="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg className="h-8 w-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
-          <h2 className="font-serif text-3xl font-bold text-[#502D55] mb-4">Account created!</h2>
-          <p className="text-[#6B7280] mb-8 text-lg">Your Admin account has been successfully created.</p>
+          <h2 className="font-serif text-3xl font-bold text-[#502D55] mb-4">Approval Pending!</h2>
+          <p className="text-[#6B7280] mb-8 text-lg">Your HR account is pending Super Admin approval. You will be able to log in once approved.</p>
           <p className="text-sm text-[#6B7280]">Redirecting to login...</p>
         </div>
       </div>

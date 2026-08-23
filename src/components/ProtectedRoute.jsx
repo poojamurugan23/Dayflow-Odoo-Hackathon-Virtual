@@ -20,7 +20,9 @@ export function ProtectedRoute({ children, allowedRoles }) {
   }
 
   if (allowedRoles && !allowedRoles.includes(role)) {
-    const redirect = role === 'admin' ? '/admin/dashboard' : '/employee/dashboard';
+    let redirect = '/employee/dashboard';
+    if (role === 'admin') redirect = '/superadmin/dashboard';
+    if (role === 'hr') redirect = '/hr/dashboard';
     return <Navigate to={redirect} replace />;
   }
 

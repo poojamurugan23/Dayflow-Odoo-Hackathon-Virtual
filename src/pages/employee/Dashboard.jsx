@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import API_BASE from '../../lib/api';
+import API_BASE, { getAvatarUrl } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  CheckCircle, LogIn, LogOut as LogOutIcon, Plane, X,
-  Mail, Phone, Building2, Briefcase, Calendar, Search, Plus, Loader2
+  LogIn, LogOut as LogOutIcon, Plane,
+  Mail, Phone, Briefcase, Search, Loader2, Clock
 } from 'lucide-react';
-import { EmployeeProfileModal } from '../../components/EmployeeProfileModal';
-import { formatDate } from '../../lib/mockData';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend 
+} from 'recharts';
 
 /* ── Status helpers ─────────────────────────────────────── */
 const STATUS_CONFIG = {
@@ -46,6 +48,8 @@ function useElapsed(startTime) {
   return elapsed;
 }
 
+/* ── Real Analytics Data State ───────────────────────────── */
+
 /* ── Main Component ─────────────────────────────────────── */
 export function EmployeeDashboard() {
   const { user } = useAuth();
@@ -54,7 +58,6 @@ export function EmployeeDashboard() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   // Check-In / Check-Out real working
   const [checkedIn, setCheckedIn] = useState(false);
@@ -63,22 +66,45 @@ export function EmployeeDashboard() {
   const [ciLoading, setCiLoading] = useState(false);
   const [showToast, setShowToast] = useState(null);
 
+  const [weeklyHoursData, setWeeklyHoursData] = useState([]);
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [totalMonthHours, setTotalMonthHours] = useState(0);
+  const [prevComplaints, setPrevComplaints] = useState([]);
+
   const elapsed = useElapsed(checkInTimestamp);
   const getToken = () => localStorage.getItem('dayflow_token');
 
   const toast = (msg) => { setShowToast(msg); setTimeout(() => setShowToast(null), 3000); };
 
+  /* Fetch Stats */
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/data/dashboard-stats`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWeeklyHoursData(data.weeklyHoursData || []);
+        setAttendanceData(data.attendanceData || []);
+      }
+    } catch (err) {
+      console.error('Fetch stats error:', err);
+    }
+  };
+
   /* Fetch employees */
-  const fetchEmployees = async () => {
-    setLoading(true);
+  const fetchEmployees = async (isInitial = false) => {
+    if (isInitial) setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/api/data/employees`, {
         headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       if (res.ok) {
         const data = await res.json();
-        setEmployees(data.map(emp => ({
-          ...emp, // Spread all fields including new schema fields
+        // Filter out super admin and HR if needed (just showing peers)
+        const peers = data.filter(e => e.role === 'employee');
+        setEmployees(peers.map(emp => ({
+          ...emp,
           id: emp._id,
           employeeId: emp.login_id,
           name: emp.name,
@@ -86,12 +112,9 @@ export function EmployeeDashboard() {
           phone: emp.phone || '+91 98765 43210',
           position: emp.position || 'Employee',
           department: emp.department || 'General',
-          companyName: emp.company_name || 'Odoo India',
-          joiningDate: emp.joining_date,
-          // Deterministic status from name hash so it's stable across renders
           attendanceStatus: emp.status === 'On Leave' ? 'leave'
             : (emp.name?.charCodeAt(0) % 3 === 0 ? 'absent' : 'present'),
-          avatar: (emp.name || 'EM').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+          avatar: getAvatarUrl(emp)
         })));
       }
     } catch (err) {
@@ -101,35 +124,98 @@ export function EmployeeDashboard() {
     }
   };
 
-  /* Check today's attendance status on mount */
-  const fetchTodayAttendance = async () => {
+  const fetchMyAttendance = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/data/attendance`, {
+      const token = localStorage.getItem('dayflow_token');
+      const resAtt = await fetch(`${API_BASE}/api/data/attendance`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resAtt.ok) {
+        const attData = await resAtt.json();
+        const userId = user?.id || user?._id;
+        const myRecords = attData.filter(a => {
+          const id = a.employee_id?._id || a.employee_id;
+          return id === userId;
+        });
+        myRecords.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const latest = myRecords[0];
+        
+        if (latest && new Date(latest.createdAt).toDateString() === new Date().toDateString()) {
+          if (latest.check_in && !latest.check_out) {
+            setCheckedIn(true);
+            const d = new Date(latest.check_in);
+            setCheckInTimestamp(d.getTime());
+            setCheckInDisplay(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+          } else {
+            setCheckedIn(false);
+            setCheckInTimestamp(null);
+            setCheckInDisplay('--:--');
+          }
+        } else {
+          setCheckedIn(false);
+        }
+        
+        // Calculate real total month hours
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        let totalHrs = 0;
+        myRecords.forEach(r => {
+          const d = new Date(r.date || r.createdAt);
+          if (d.getMonth() === currentMonth && d.getFullYear() === currentYear && r.check_in && r.check_out) {
+             const hrs = (new Date(r.check_out) - new Date(r.check_in)) / (1000 * 60 * 60);
+             totalHrs += hrs;
+          }
+        });
+        setTotalMonthHours(totalHrs);
+
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchMyComplaints = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/data/complaints`, {
         headers: { 'Authorization': `Bearer ${getToken()}` }
       });
       if (res.ok) {
-        const records = await res.json();
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const todayRecord = records.find(r => {
-          const d = new Date(r.date); d.setHours(0, 0, 0, 0);
-          return d.getTime() === today.getTime();
+        const data = await res.json();
+        const userId = user?.id || user?._id;
+        const myComplaints = data.filter(c => (c.employee_id?._id || c.employee_id) === userId);
+        
+        // Check for newly resolved tickets
+        setPrevComplaints(prev => {
+          if (prev.length > 0) {
+            myComplaints.forEach(curr => {
+              if (curr.status === 'Resolved') {
+                const old = prev.find(p => p._id === curr._id);
+                if (old && old.status !== 'Resolved') {
+                  toast(`Ticket Resolved: ${curr.subject}`);
+                }
+              }
+            });
+          }
+          return myComplaints;
         });
-        if (todayRecord?.check_in && !todayRecord?.check_out) {
-          setCheckedIn(true);
-          const ciDate = new Date(todayRecord.check_in);
-          setCheckInTimestamp(ciDate.getTime());
-          setCheckInDisplay(ciDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
-        }
       }
-    } catch (err) {
-      console.error('Fetch attendance error:', err);
+    } catch (e) {
+      console.error(e);
     }
   };
 
   useEffect(() => {
-    fetchEmployees();
-    fetchTodayAttendance();
-  }, []);
+    fetchStats();
+    fetchEmployees(true);
+    fetchMyAttendance();
+    fetchMyComplaints();
+    const interval = setInterval(() => {
+      fetchMyAttendance();
+      fetchEmployees(false);
+      fetchMyComplaints();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   /* Real Check-In */
   const handleCheckIn = async () => {
@@ -141,11 +227,8 @@ export function EmployeeDashboard() {
         headers: { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' }
       });
       if (res.ok) {
-        const now = new Date();
-        setCheckedIn(true);
-        setCheckInTimestamp(now.getTime());
-        setCheckInDisplay(now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
-        toast('Checked in successfully! Status dot is now green ●');
+        fetchMyAttendance();
+        toast('Checked in successfully!');
       } else {
         const err = await res.json();
         toast(`Check-in: ${err.message}`);
@@ -167,9 +250,7 @@ export function EmployeeDashboard() {
         headers: { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' }
       });
       if (res.ok) {
-        setCheckedIn(false);
-        setCheckInTimestamp(null);
-        setCheckInDisplay(null);
+        fetchMyAttendance();
         toast('Checked out successfully!');
       } else {
         const err = await res.json();
@@ -194,115 +275,123 @@ export function EmployeeDashboard() {
       {showToast && (
         <div className="fixed top-20 right-6 z-50">
           <div className="rounded-lg bg-[#171923] text-white px-5 py-3 text-sm shadow-lg flex items-center gap-2">
-            <CheckCircle size={16} className="text-green-400" />{showToast}
+            <div className="h-4 w-4 rounded-full bg-green-500" />{showToast}
           </div>
         </div>
       )}
 
-      {/* ── LEFT: Employee Directory Grid ─────────────────── */}
-      <div className="flex-1 min-w-0 space-y-5">
+      {/* ── LEFT: Analytics & Employee Directory ─────────────────── */}
+      <div className="flex-1 min-w-0 space-y-6 w-full">
+        
+        {/* Overview Header & Monthly Hours */}
+        <div className="bg-gradient-to-r from-[#502D55] to-[#714376] rounded-2xl p-6 text-white shadow-md flex flex-col sm:flex-row justify-between items-center gap-6">
+          <div>
+            <h1 className="font-serif text-2xl lg:text-3xl font-bold">Welcome back, {user?.name?.split(' ')[0]}!</h1>
+            <p className="mt-1 text-white/80 text-sm">Here is your work summary for this month.</p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 flex items-center gap-4 min-w-[200px]">
+            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              <Clock size={24} className="text-white" />
+            </div>
+            <div>
+              <p className="text-xs text-white/70 uppercase tracking-widest font-semibold">Total Hours</p>
+              <p className="text-2xl font-bold font-mono">{Math.floor(totalMonthHours)}<span className="text-sm font-medium">.{Math.round((totalMonthHours % 1) * 10)}h</span></p>
+            </div>
+          </div>
+        </div>
+
+        {/* Analytics Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Weekly Hours Bar Chart */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-800 mb-4">Hours Logged (This Week)</h3>
+            <div className="h-48 w-full">
+              <ResponsiveContainer width="99%" height="100%">
+                <BarChart data={weeklyHoursData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                  <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
+                  <RechartsTooltip cursor={{ fill: '#F3F4F6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="hours" fill="#502D55" radius={[4, 4, 0, 0]} barSize={30} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Attendance Donut Chart */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-800 mb-4">Attendance (This Month)</h3>
+            <div className="h-48 w-full flex items-center">
+              <ResponsiveContainer width="99%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={attendanceData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {attendanceData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Legend verticalAlign="middle" align="right" layout="vertical" wrapperStyle={{ fontSize: '12px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Directory Section */}
         <div>
-          <h1 className="font-serif text-2xl lg:text-3xl font-bold text-[#171923]">Employees</h1>
-          <p className="mt-1 text-sm text-[#6B7280]">Directory of your colleagues. Click any card to view their profile.</p>
-        </div>
-
-        {/* Action Bar: Search */}
-        <div className="bg-white rounded-xl border border-gray-200 p-3.5 flex flex-col sm:flex-row justify-end items-start sm:items-center gap-3">
-
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search employees..."
-              className="block w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 focus:border-[#502D55]"
-            />
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+            <h2 className="font-bold text-lg text-[#171923]">Colleagues Directory</h2>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text" value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Search peers..."
+                className="block w-full pl-9 pr-4 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#502D55]/20 focus:border-[#502D55]"
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Status Legend */}
-        <div className="flex flex-wrap items-center gap-5 text-xs text-gray-600 px-1">
-          <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-green-500" /><span>Present in office</span></div>
-          <div className="flex items-center gap-1.5"><Plane size={13} className="text-sky-500" /><span>On leave</span></div>
-          <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-yellow-500" /><span>Absent</span></div>
-        </div>
-
-        {/* Employee Cards Grid */}
-        {loading ? (
-          <div className="flex justify-center items-center h-60">
-            <Loader2 className="animate-spin text-[#502D55]" size={32} />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-            <p className="text-sm text-gray-400">No employees found{search ? ` for "${search}"` : ''}.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4">
-            {filtered.map(emp => (
-              <div
-                key={emp.id}
-                onClick={() => setSelectedEmployee(emp)}
-                className="bg-white rounded-xl border border-gray-200 p-5 relative cursor-pointer hover:border-[#502D55]/40 hover:shadow-md transition-all group flex flex-col h-full"
-              >
-                {/* Header: Avatar + Details */}
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="relative">
-                    <div className="h-14 w-14 rounded-full bg-gradient-to-br from-[#502D55] to-[#935073] text-white flex items-center justify-center text-lg font-bold shadow-sm group-hover:scale-105 transition-transform shrink-0">
-                      {emp.avatar}
+          {loading ? (
+            <div className="flex justify-center items-center h-40 bg-white rounded-xl border border-gray-200">
+              <Loader2 className="animate-spin text-[#502D55]" size={24} />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+              <p className="text-sm text-gray-400">No peers found{search ? ` for "${search}"` : ''}.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filtered.map(emp => (
+                <div key={emp.id} className="bg-white rounded-xl border border-gray-200 p-4 relative flex items-center gap-4">
+                  <div className="relative shrink-0">
+                    <div className="h-12 w-12 rounded-full border border-gray-100 shadow-sm shrink-0">
+                      <img src={emp.avatar} alt={emp.name} className="h-12 w-12 rounded-full object-cover" />
                     </div>
                     <div className="absolute -bottom-1 -right-1 rounded-full border-2 border-white bg-white">
                       <StatusDot status={emp.attendanceStatus} />
                     </div>
                   </div>
                   
-                  <div className="flex-1 min-w-0 pt-1">
-                    <h3 className="text-sm font-bold text-[#171923] truncate leading-tight">{emp.name}</h3>
-                    <p className="text-xs text-[#502D55] font-semibold mt-1 truncate">{emp.position}</p>
-                    <p className="text-[11px] text-gray-500 font-medium truncate flex items-center gap-1 mt-0.5">
-                      <Briefcase size={10} /> {emp.department}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-bold text-[#171923] truncate">{emp.name}</h3>
+                    <p className="text-[11px] text-[#502D55] font-semibold truncate">{emp.position}</p>
+                    <p className="text-[10px] text-gray-500 font-medium truncate mt-0.5">
+                      {emp.department} • {emp.email}
                     </p>
                   </div>
                 </div>
-
-                {/* Body: Contact Info */}
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                    <Mail size={12} className="text-gray-400 shrink-0" />
-                    <span className="truncate">{emp.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                    <Phone size={12} className="text-gray-400 shrink-0" />
-                    <span className="truncate">{emp.phone}</span>
-                  </div>
-                </div>
-
-                {/* Footer: Skills & ID */}
-                <div className="mt-auto pt-4 border-t border-gray-100 flex flex-wrap items-end justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    {emp.skills && emp.skills.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {emp.skills.slice(0, 3).map(skill => (
-                          <span key={skill} className="px-1.5 py-0.5 rounded text-[9px] bg-gray-50 border border-gray-200 text-gray-600 font-medium whitespace-nowrap">
-                            {skill}
-                          </span>
-                        ))}
-                        {emp.skills.length > 3 && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] bg-gray-50 border border-gray-200 text-gray-400 font-medium">
-                            +{emp.skills.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-[10px] text-gray-400 italic">No skills listed</span>
-                    )}
-                  </div>
-                  <span className="inline-flex items-center rounded-md bg-[#502D55]/5 px-1.5 py-0.5 text-[9px] font-mono font-bold text-[#502D55] whitespace-nowrap shrink-0">
-                    {emp.employeeId}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── RIGHT: Check-In / Check-Out Systray ──────────── */}
@@ -369,20 +458,11 @@ export function EmployeeDashboard() {
             </div>
             <div className="flex justify-between text-gray-500">
               <span>Your ID</span>
-              <span className="font-mono font-bold text-[#502D55] text-[10px]">{user?.employeeId || user?.login_id || '—'}</span>
+              <span className="font-mono font-bold text-[#502D55] text-sm">{user?.employeeId || user?.login_id || '—'}</span>
             </div>
           </div>
         </div>
       </div>
-
-      {/* ── View-Only Employee Profile Modal ─────────────── */}
-      {selectedEmployee && (
-        <EmployeeProfileModal 
-          employee={selectedEmployee} 
-          onClose={() => setSelectedEmployee(null)} 
-          isAdmin={false} 
-        />
-      )}
     </div>
   );
 }

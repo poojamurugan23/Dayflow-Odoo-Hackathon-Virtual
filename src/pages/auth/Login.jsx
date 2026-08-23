@@ -33,8 +33,8 @@ export function Login() {
   };
 
   const demoProfiles = [
-    { name: 'Priya Sharma', id: 'OIPRSH20220001', pass: 'Demo@123', role: 'Super Admin' },
-    { name: 'Arjun Mehta', id: 'OIARME20230001', pass: 'Demo@123', role: 'HR Manager' },
+    { name: 'Vikram Patel', id: 'OISUAD20240001', pass: 'SuperAdmin@123', role: 'Super Admin' },
+    { name: 'Priya Sharma', id: 'OIPRSH20220001', pass: 'Demo@123', role: 'HR Manager' },
     { name: 'Sarah Connor', id: 'OISACO20260002', pass: 'password123', role: 'Employee' }
   ];
 

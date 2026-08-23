@@ -12,6 +12,9 @@ const userSchema = new mongoose.Schema({
   position: { type: String, default: 'New Employee' },
   status: { type: String, default: 'Active' },
   joining_date: { type: Date, default: Date.now },
+  is_approved: { type: Boolean, default: true }, // Default true for employees/admin, HR signup will set to false
+  must_change_password: { type: Boolean, default: false },
+  serial_number: { type: Number },
   
   // Resume Info
   about: { type: String, default: 'Write a short bio about yourself.' },
@@ -33,6 +36,10 @@ const userSchema = new mongoose.Schema({
   nationality: { type: String, default: '' },
   gender: { type: String, default: '' },
   marital_status: { type: String, default: '' },
+  personal_email: { type: String, default: '' },
+  pan_no: { type: String, default: '' },
+  uan_no: { type: String, default: '' },
+  pin_code: { type: String, default: '' },
   
   // Salary / Compensation Info
   month_wage: { type: Number, default: 50000 },
@@ -41,7 +48,11 @@ const userSchema = new mongoose.Schema({
   allowances: { type: Number, default: 10000 },
   pf: { type: Number, default: 5000 },
   working_days: { type: Number, default: 5 },
-  break_time: { type: Number, default: 1 }
+  break_time: { type: Number, default: 1 },
+  
+  // Leave Allocations
+  paid_leave_allocated: { type: Number, default: 24 },
+  sick_leave_allocated: { type: Number, default: 7 }
 }, {
   timestamps: true
 });

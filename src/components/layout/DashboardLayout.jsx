@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import API_BASE from '../../lib/api';
+import API_BASE, { getAvatarUrl } from '../../lib/api';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
-  LayoutDashboard, Users, Clock, Calendar, CreditCard, FileText, Settings, LogOut, Menu, X, Bell, Search, ChevronDown
+  LayoutDashboard, Users, Clock, Calendar, CreditCard, FileText, Settings, LogOut, Menu, X, Bell, Search, ChevronDown, MessageSquareWarning, ShieldCheck, UserCheck, Video
 } from 'lucide-react';
 
 export function DashboardLayout({ children, role }) {
@@ -33,10 +33,7 @@ export function DashboardLayout({ children, role }) {
   };
 
   useEffect(() => {
-    // Initial fetch
     fetchNotifications();
-    
-    // Polling every 5 seconds for "real-time" updates
     const intervalId = setInterval(fetchNotifications, 5000);
     return () => clearInterval(intervalId);
   }, []);
@@ -59,25 +56,59 @@ export function DashboardLayout({ children, role }) {
     navigate('/login');
   };
 
-  const adminNav = [
-    { name: 'Overview', path: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Employees', path: '/admin/employees', icon: Users },
-    { name: 'Attendance', path: '/admin/attendance', icon: Clock },
-    { name: 'Time Off', path: '/admin/timeoff', icon: Calendar },
-    { name: 'Payroll', path: '/admin/payroll', icon: CreditCard },
-    { name: 'Reports', path: '/admin/reports', icon: FileText },
+  const superadminNav = [
+    { name: 'Overview', path: '/superadmin/dashboard', icon: LayoutDashboard },
+    { name: 'Profiles', path: '/superadmin/profiles', icon: Users },
+    { name: 'HR Approvals', path: '/superadmin/hr-approval', icon: UserCheck },
+    { name: 'Reports', path: '/superadmin/reports', icon: FileText },
+    { name: 'Complaints', path: '/superadmin/complaints', icon: MessageSquareWarning },
+    { name: 'Meetings', path: '/superadmin/meetings', icon: Video },
+  ];
+
+  const hrNav = [
+    { name: 'Overview', path: '/hr/dashboard', icon: LayoutDashboard },
+    { name: 'Employees', path: '/hr/employees', icon: Users },
+    { name: 'Attendance', path: '/hr/attendance', icon: Clock },
+    { name: 'Time Off', path: '/hr/timeoff', icon: Calendar },
+    { name: 'Payroll', path: '/hr/payroll', icon: CreditCard },
+    { name: 'Reports', path: '/hr/reports', icon: FileText },
+    { name: 'Complaints', path: '/hr/complaints', icon: MessageSquareWarning },
+    { name: 'Meetings', path: '/hr/meetings', icon: Video },
   ];
 
   const employeeNav = [
-    { name: 'Employees', path: '/employee/dashboard', icon: Users },
+    { name: 'Overview', path: '/employee/dashboard', icon: LayoutDashboard },
     { name: 'Attendance', path: '/employee/attendance', icon: Clock },
     { name: 'Time Off', path: '/employee/timeoff', icon: Calendar },
+    { name: 'Payroll', path: '/employee/payroll', icon: CreditCard },
+    { name: 'Complaints', path: '/employee/complaints', icon: MessageSquareWarning },
+    { name: 'Meetings', path: '/employee/meetings', icon: Video },
   ];
 
-  const navItems = role === 'admin' ? adminNav : employeeNav;
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  let navItems = employeeNav;
+  if (role === 'admin') navItems = superadminNav;
+  if (role === 'hr') navItems = hrNav;
 
+  const unreadCount = notifications.filter(n => !n.is_read).length;
   const isActive = (path) => location.pathname === path;
+
+  const getDashboardPath = () => {
+    if (role === 'admin') return '/superadmin/dashboard';
+    if (role === 'hr') return '/hr/dashboard';
+    return '/employee/dashboard';
+  };
+
+  const getSettingsPath = () => {
+    if (role === 'admin') return '/superadmin/settings';
+    if (role === 'hr') return '/hr/settings';
+    return '/employee/settings';
+  };
+
+  const getProfilePath = () => {
+    if (role === 'admin') return '/superadmin/profile';
+    if (role === 'hr') return '/hr/profile';
+    return '/employee/profile';
+  };
 
   const NavLink = ({ item, onClick }) => {
     const Icon = item.icon;
@@ -99,45 +130,40 @@ export function DashboardLayout({ children, role }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F3F4F6]">
-      {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}>
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm"></div>
         </div>
       )}
 
-      {/* Sidebar — Mobile */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 transform bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out lg:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-16 items-center justify-between px-5 border-b border-gray-100">
-          <Link to={role === 'admin' ? '/admin/dashboard' : '/employee/dashboard'} className="font-serif text-xl font-bold text-[#502D55]">DAYFLOW</Link>
+          <Link to={getDashboardPath()} className="font-serif text-xl font-bold text-[#502D55]">DAYFLOW</Link>
           <button onClick={() => setSidebarOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
           {navItems.map(item => <NavLink key={item.name} item={item} onClick={() => setSidebarOpen(false)} />)}
         </nav>
         <div className="border-t border-gray-100 p-3 space-y-1">
-          <button onClick={() => { navigate(role === 'admin' ? '/admin/settings' : '/employee/settings'); setSidebarOpen(false); }} className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100"><Settings size={20} className="text-gray-400" /> Settings</button>
+          <button onClick={() => { navigate(getSettingsPath()); setSidebarOpen(false); }} className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100"><Settings size={20} className="text-gray-400" /> Settings</button>
           <button onClick={handleLogout} className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600"><LogOut size={20} className="text-gray-400 group-hover:text-red-500" /> Sign Out</button>
         </div>
       </aside>
 
-      {/* Sidebar — Desktop */}
       <aside className="hidden lg:flex lg:flex-shrink-0 lg:flex-col w-[260px] border-r border-gray-200 bg-white">
         <div className="flex h-16 items-center px-6 border-b border-gray-100">
-          <Link to={role === 'admin' ? '/admin/dashboard' : '/employee/dashboard'} className="font-serif text-xl font-bold text-[#502D55]">DAYFLOW</Link>
+          <Link to={getDashboardPath()} className="font-serif text-xl font-bold text-[#502D55]">DAYFLOW</Link>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
           {navItems.map(item => <NavLink key={item.name} item={item} />)}
         </nav>
         <div className="border-t border-gray-100 p-3 space-y-1">
-          <button onClick={() => navigate(role === 'admin' ? '/admin/settings' : '/employee/settings')} className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100"><Settings size={20} className="text-gray-400 group-hover:text-[#502D55]" /> Settings</button>
+          <button onClick={() => navigate(getSettingsPath())} className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100"><Settings size={20} className="text-gray-400 group-hover:text-[#502D55]" /> Settings</button>
           <button onClick={handleLogout} className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600"><LogOut size={20} className="text-gray-400 group-hover:text-red-500" /> Sign Out</button>
         </div>
       </aside>
 
-      {/* Main area */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Header */}
         <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 lg:px-6">
           <div className="flex items-center gap-4 flex-1">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-gray-500 hover:text-gray-700"><Menu size={22} /></button>
@@ -148,7 +174,6 @@ export function DashboardLayout({ children, role }) {
           </div>
           
           <div className="flex items-center justify-end gap-3">
-            {/* Notifications */}
             <div className="relative">
               <button onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }} className="relative p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
                 <Bell size={20} />
@@ -190,15 +215,14 @@ export function DashboardLayout({ children, role }) {
               )}
             </div>
 
-            {/* Profile dropdown */}
             <div className="relative">
               <button onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }} className="flex items-center gap-3 rounded-lg px-3 py-1.5 hover:bg-gray-100 transition-colors">
-                <div className="h-8 w-8 rounded-full bg-[#502D55] text-white flex items-center justify-center text-xs font-bold">
-                  {user?.avatar || user?.name?.charAt(0) || 'U'}
+                <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0">
+                  <img src={getAvatarUrl(user)} alt={user?.name || 'User'} className="h-8 w-8 rounded-full object-cover shadow-sm border border-gray-100 bg-gray-50" />
                 </div>
                 <div className="hidden md:block text-left">
                   <p className="text-sm font-medium text-gray-800 leading-tight">{user?.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user?.role === 'admin' ? 'HR Admin' : user?.position}</p>
+                  <p className="text-xs text-gray-500 capitalize">{user?.role === 'admin' ? 'Super Admin' : user?.position}</p>
                 </div>
                 <ChevronDown size={16} className="hidden md:block text-gray-400" />
               </button>
@@ -208,22 +232,15 @@ export function DashboardLayout({ children, role }) {
                     <p className="text-sm font-medium text-gray-900">{user?.name}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{user?.email}</p>
                   </div>
-                  {role !== 'admin' ? (
-                    <button onClick={() => { navigate('/employee/profile'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Users size={16} /> My Profile</button>
-                  ) : (
-                    <>
-                      <button onClick={() => { navigate('/admin/profile'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Users size={16} /> My Profile</button>
-                      <button onClick={() => { navigate('/admin/settings'); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Settings size={16} /> Settings</button>
-                    </>
-                  )}
-                  <button onClick={handleLogout} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"><LogOut size={16} /> Sign Out</button>
+                  <button onClick={() => { navigate(getProfilePath()); setProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Users size={16} /> My Profile</button>
+                  <div className="h-px bg-gray-100 my-1"></div>
+                  <button onClick={handleLogout} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 font-medium flex items-center gap-2"><LogOut size={16} /> Sign Out</button>
                 </div>
               )}
             </div>
           </div>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 lg:p-8 max-w-7xl mx-auto">
             {children}
@@ -231,7 +248,6 @@ export function DashboardLayout({ children, role }) {
         </main>
       </div>
 
-      {/* Click-away for dropdowns */}
       {(notifOpen || profileOpen) && (
         <div className="fixed inset-0 z-40" onClick={() => { setNotifOpen(false); setProfileOpen(false); }}></div>
       )}

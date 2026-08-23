@@ -348,17 +348,28 @@ export function EmployeeTimeOff() {
                 <span className="font-mono font-bold text-[#502D55]">{calculateDays()} Days</span>
               </div>
 
-              {/* Attachment (for sick leave certificate) */}
-              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                <div>
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Attachment:</span>
-                  <span className="text-[11px] text-gray-400">(For sick leave certificate)</span>
+              {/* File Attachment */}
+              <div className="flex flex-col gap-2 pb-3 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Leave Letter / Medical Note</span>
+                  <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 hover:bg-[#502D55]/10 hover:text-[#502D55] text-xs font-semibold text-gray-600 transition-colors">
+                    <Upload size={13} />
+                    {attachmentName ? 'Change File' : 'Upload File'}
+                    <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        if (file.size > 5 * 1024 * 1024) { toast('File is too large. Max 5MB.'); return; }
+                        setAttachmentName(file.name);
+                      }
+                    }} />
+                  </label>
                 </div>
-                <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 text-xs font-semibold text-[#502D55] transition-colors">
-                  <Upload size={13} />
-                  {attachmentName ? attachmentName.substring(0, 12) + '…' : 'Upload'}
-                  <input type="file" className="hidden" onChange={e => { if (e.target.files?.[0]) setAttachmentName(e.target.files[0].name); }} />
-                </label>
+                {attachmentName && (
+                  <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded text-xs flex justify-between items-center">
+                    <span className="truncate">{attachmentName}</span>
+                    <button type="button" onClick={() => setAttachmentName('')} className="hover:text-green-900"><X size={14}/></button>
+                  </div>
+                )}
               </div>
 
               {/* Submit + Discard */}
@@ -366,7 +377,7 @@ export function EmployeeTimeOff() {
                 <button type="submit" disabled={submitting}
                   className="flex-1 rounded-xl bg-[#502D55] hover:bg-[#3e2342] text-white py-2.5 text-sm font-bold shadow-sm transition-colors flex items-center justify-center gap-1.5 disabled:opacity-70">
                   {submitting && <Loader2 className="animate-spin" size={15} />}
-                  Submit
+                  Submit Request
                 </button>
                 <button type="button" onClick={() => setShowModal(false)}
                   className="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">

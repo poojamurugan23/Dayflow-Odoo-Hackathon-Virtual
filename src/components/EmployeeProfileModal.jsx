@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
-import API_BASE from '../lib/api';
-import { X, Save, Edit3, Loader2, Download, Printer } from 'lucide-react';
+import API_BASE, { getAvatarUrl } from '../lib/api';
+import { X, Save, Edit3, Loader2, Download, Printer, Image as ImageIcon } from 'lucide-react';
 import { formatDate } from '../lib/mockData';
+import { toPng } from 'html-to-image';
 
 export function EmployeeProfileModal({ employee, onClose, isHrView = false, refreshList }) {
   const [activeTab, setActiveTab] = useState('resume');
@@ -43,7 +44,39 @@ export function EmployeeProfileModal({ employee, onClose, isHrView = false, refr
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const next = { ...prev, [name]: value };
+      if (name === 'month_wage') {
+        const wage = Number(value) || 0;
+        next.basic_salary = wage * 0.50;
+        next.hra = next.basic_salary * 0.50;
+        next.pf = next.basic_salary * 0.12;
+        next.allowances = wage - (next.basic_salary + next.hra + next.pf);
+      }
+      return next;
+    });
+  };
+
+  const handleDownloadIdCard = async () => {
+    const element = document.getElementById('print-id-card');
+    if (!element) return;
+    try {
+      const dataUrl = await toPng(element, { 
+        quality: 1, 
+        pixelRatio: 3, 
+        cacheBust: true,
+        fontEmbedCSS: '',
+        style: { margin: '0', transform: 'none' }
+      });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `ID_Card_${employee.name.replace(/\s+/g, '_')}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Failed to download ID card', error);
+    }
   };
 
   return (
@@ -55,27 +88,15 @@ export function EmployeeProfileModal({ employee, onClose, isHrView = false, refr
         <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-[#171923] via-[#2D1B33] to-[#502D55] p-8 text-white">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
           
-          <div className="absolute top-6 right-6 flex items-center gap-3 z-10">
-            {canEdit && (
-              <button onClick={() => isEditing ? handleSave() : setIsEditing(true)} disabled={loading}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md transition-all ${isEditing ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg' : 'bg-white/10 hover:bg-white/20 text-white'}`}>
-                {loading ? <Loader2 size={16} className="animate-spin" /> : (isEditing ? <Save size={16} /> : <Edit3 size={16} />)}
-                {isEditing ? 'Save Changes' : 'Edit Profile'}
-              </button>
-            )}
-            <button onClick={onClose} className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white flex items-center justify-center transition-all">
+          <div className="absolute top-6 right-6 flex items-center gap-3 z-50">
+            <button onClick={onClose} className="h-9 w-9 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md text-white flex items-center justify-center transition-all shadow-md cursor-pointer">
               <X size={18} />
             </button>
           </div>
 
           <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-end gap-6 text-center sm:text-left">
             <div className="h-24 w-24 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl flex items-center justify-center text-white text-4xl font-bold relative group overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              {employee.profile_picture ? (
-                <img src={employee.profile_picture} alt={employee.name} className="h-full w-full object-cover" />
-              ) : (
-                employee.avatar || employee.name?.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()
-              )}
+              <img src={getAvatarUrl(employee)} alt={employee.name} className="h-full w-full object-cover" crossOrigin="anonymous" />
             </div>
             <div className="pb-2">
               <div className="flex flex-col sm:flex-row items-center gap-3 mb-2">
@@ -218,15 +239,15 @@ export function EmployeeProfileModal({ employee, onClose, isHrView = false, refr
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-50 pb-2">Components (Monthly)</h4>
                   <div className="space-y-3">
-                    <div className="flex justify-between text-sm"><span className="text-gray-600 font-semibold">Basic (50%)</span><span className="font-mono font-bold text-[#171923]">₹{((employee.month_wage || 0) * 0.50).toFixed(2)}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-gray-600 font-semibold">HRA (20%)</span><span className="font-mono font-bold text-[#171923]">₹{((employee.month_wage || 0) * 0.20).toFixed(2)}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-gray-600 font-semibold">Allowances (20%)</span><span className="font-mono font-bold text-[#171923]">₹{((employee.month_wage || 0) * 0.20).toFixed(2)}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-gray-600 font-semibold">Basic</span><span className="font-mono font-bold text-[#171923]">₹{((isEditing ? formData.basic_salary : employee.basic_salary) || 0).toFixed(2)}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-gray-600 font-semibold">HRA</span><span className="font-mono font-bold text-[#171923]">₹{((isEditing ? formData.hra : employee.hra) || 0).toFixed(2)}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-gray-600 font-semibold">Allowances</span><span className="font-mono font-bold text-[#171923]">₹{((isEditing ? formData.allowances : employee.allowances) || 0).toFixed(2)}</span></div>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-50 pb-2">Deductions (Monthly)</h4>
                   <div className="space-y-3">
-                    <div className="flex justify-between text-sm"><span className="text-red-600 font-semibold">PF Deduction (10%)</span><span className="font-mono font-bold text-red-600">₹{((employee.month_wage || 0) * 0.10).toFixed(2)}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-red-600 font-semibold">PF Deduction</span><span className="font-mono font-bold text-red-600">₹{((isEditing ? formData.pf : employee.pf) || 0).toFixed(2)}</span></div>
                     <div className="flex justify-between text-sm"><span className="text-red-600 font-semibold">Professional Tax</span><span className="font-mono font-bold text-red-600">₹200.00</span></div>
                   </div>
                 </div>
@@ -237,20 +258,18 @@ export function EmployeeProfileModal({ employee, onClose, isHrView = false, refr
           {/* ID CARD TAB */}
           {activeTab === 'idcard' && (
             <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-2xl border border-gray-200">
-              <button className="mb-6 flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors" onClick={() => window.print()}>
-                <Printer size={16} /> Print ID Card
-              </button>
+              <div className="mb-6 flex gap-3">
+                <button className="flex items-center gap-2 bg-[#502D55] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-[#3e2342] transition-colors" onClick={handleDownloadIdCard}>
+                  <ImageIcon size={16} /> Download Image
+                </button>
+              </div>
               
               {/* ID Card UI */}
-              <div id="print-id-card" className="w-[300px] h-[480px] bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden relative flex flex-col">
+              <div id="print-id-card" className="w-[300px] h-[480px] bg-white rounded-xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.3)] border border-gray-200 overflow-hidden relative flex flex-col">
                 <div className="h-32 bg-gradient-to-br from-[#502D55] to-[#935073] relative flex justify-center pt-6">
                   <h1 className="text-white font-bold tracking-widest text-lg uppercase">{employee.company_name || 'Odoo India'}</h1>
-                  <div className="absolute -bottom-16 w-32 h-32 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
-                    {employee.profile_picture ? (
-                      <img src={employee.profile_picture} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center text-4xl text-gray-400 font-bold">{employee.avatar}</div>
-                    )}
+                  <div className="absolute -bottom-16 w-32 h-32 rounded-full border-4 border-white overflow-hidden bg-gray-100 shadow-lg flex items-center justify-center">
+                    <img src={getAvatarUrl(employee)} alt="Profile" className="w-full h-full object-cover" crossOrigin="anonymous" />
                   </div>
                 </div>
                 
@@ -259,7 +278,7 @@ export function EmployeeProfileModal({ employee, onClose, isHrView = false, refr
                   <p className="text-sm text-[#502D55] font-semibold mt-1 uppercase tracking-wide">{employee.position}</p>
                   <div className="w-12 h-1 bg-gray-200 rounded my-4"></div>
                   
-                  <div className="w-full space-y-2 text-left bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  <div className="w-full space-y-3 text-left bg-gray-50 p-4 rounded-lg border border-gray-100">
                     <div className="flex flex-col text-xs">
                       <span className="text-gray-400 font-semibold uppercase text-[9px] tracking-wider">Employee ID</span>
                       <span className="font-mono font-bold text-gray-800 text-sm">{employee.employeeId || employee.login_id}</span>
@@ -268,15 +287,15 @@ export function EmployeeProfileModal({ employee, onClose, isHrView = false, refr
                       <span className="text-gray-400 font-semibold uppercase text-[9px] tracking-wider">Department</span>
                       <span className="font-semibold text-gray-800">{employee.department}</span>
                     </div>
-                    <div className="flex flex-col text-xs">
-                      <span className="text-gray-400 font-semibold uppercase text-[9px] tracking-wider">Blood Group</span>
-                      <span className="font-bold text-red-600">O+</span>
-                    </div>
                   </div>
                 </div>
                 
-                <div className="h-10 bg-gray-900 text-center flex items-center justify-center">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">Authorized Signature</p>
+                <div className="h-24 bg-white border-t border-gray-100 flex flex-col items-end justify-end px-6 pb-4">
+                  <div className="relative w-32 flex flex-col items-center">
+                    <span className="absolute -top-7 left-1 z-10 transform -rotate-3" style={{ fontFamily: "'Brush Script MT', 'Dancing Script', cursive", fontSize: '28px', color: '#171923' }}>Vikram Patel</span>
+                    <div className="w-28 border-t border-gray-400 relative z-0"></div>
+                    <p className="text-[8px] text-gray-500 uppercase tracking-widest mt-1.5 text-center">Authorized Sign</p>
+                  </div>
                 </div>
               </div>
             </div>
