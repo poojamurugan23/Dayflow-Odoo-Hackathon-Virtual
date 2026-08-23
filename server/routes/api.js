@@ -241,7 +241,7 @@ router.post('/employees', authMiddleware, async (req, res) => {
                       <li>Fill out your personal details, emergency contacts, and list your skills.</li>
                     </ul>
                     <div style="text-align: center; margin-top: 20px;">
-                      <a href="http://localhost:5173/login" style="background-color: #502D55; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block;">Access My Dashboard</a>
+                      <a href="${req.headers.origin || 'http://localhost:5173'}/login" style="background-color: #502D55; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px; display: inline-block;">Access My Dashboard</a>
                     </div>
                   </div>
                   
