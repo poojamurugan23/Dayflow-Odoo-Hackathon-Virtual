@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed:auth": "node --env-file=.env.local scripts/create-auth-users.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify:rls": "node --env-file=.env.local scripts/verify-rls.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
