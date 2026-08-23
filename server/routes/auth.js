@@ -43,7 +43,7 @@ router.post('/signup', async (req, res) => {
     const startOfYear = new Date(joiningYear, 0, 1);
     const endOfYear = new Date(joiningYear + 1, 0, 1);
     const countThisYear = await User.countDocuments({ 
-      created_at: { $gte: startOfYear, $lt: endOfYear } 
+      createdAt: { $gte: startOfYear, $lt: endOfYear } 
     });
     const serial = (countThisYear + 1).toString().padStart(4, '0');
     
