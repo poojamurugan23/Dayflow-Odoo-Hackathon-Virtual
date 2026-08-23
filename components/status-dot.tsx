@@ -19,14 +19,41 @@ const PRESENT = "#1F8A5F";
 const LEAVE = "#3E6FA8";
 const ABSENT = "#B8791C";
 
+/**
+ * Live magenta — a session running RIGHT NOW. The only magenta in the product,
+ * which is what makes it read as "this is happening" rather than decoration.
+ */
+const LIVE = "#D6006E";
+
 export function StatusDot({
   status,
+  live = false,
   className,
 }: {
   status: DayStatus | undefined;
+  /** True while this person has an open punch — overrides the derived status. */
+  live?: boolean;
   className?: string;
 }) {
-  const label = statusLabel(status);
+  const label = live ? "Checked in now" : statusLabel(status);
+
+  // Live wins over the derived status: mid-session the day has not resolved to
+  // present or half-day yet, and "in the office right now" is the more useful
+  // fact. It settles to the derived colour on check out.
+  if (live) {
+    return (
+      <span
+        role="img"
+        aria-label={label}
+        title={label}
+        className={cn(
+          "block size-2.5 rounded-full ring-2 ring-card transition-colors duration-200 motion-safe:animate-pulse",
+          className,
+        )}
+        style={{ backgroundColor: LIVE }}
+      />
+    );
+  }
 
   if (status === "leave") {
     return (
@@ -51,7 +78,7 @@ export function StatusDot({
       aria-label={label}
       title={label}
       className={cn(
-        "block size-2.5 rounded-full ring-2 ring-card",
+        "block size-2.5 rounded-full ring-2 ring-card transition-colors duration-200",
         neutral && "bg-muted-foreground/40",
         className,
       )}
@@ -76,11 +103,17 @@ function dotColour(status: DayStatus): string {
 }
 
 /** Dot plus its written state, for places with room for the label. */
-export function StatusBadge({ status }: { status: DayStatus | undefined }) {
+export function StatusBadge({
+  status,
+  live = false,
+}: {
+  status: DayStatus | undefined;
+  live?: boolean;
+}) {
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-      <StatusDot status={status} />
-      {statusLabel(status)}
+      <StatusDot status={status} live={live} />
+      {live ? "Checked in now" : statusLabel(status)}
     </span>
   );
 }

@@ -272,14 +272,18 @@ exc(login_id, rn, kind) as (
 insert into attendance_punches (profile_id, punch_in, punch_out, source, note)
 select
   e.id,
+  -- `at time zone 'Asia/Kolkata'` reads the naive timestamp AS IST and yields
+  -- the correct instant. Without it Postgres interprets it in the session zone
+  -- (UTC on Supabase), so a 09:00 shift lands stored as 09:00Z and renders as
+  -- 14:30 IST — everyone appearing to start work mid-afternoon.
   case
-    when x.kind = 'half' then (s.day + time '09:20')
-    else (s.day + time '09:00' + (interval '1 minute' * ((e.ei * 7 + s.rn * 13) % 26)))
+    when x.kind = 'half' then (s.day + time '09:20') at time zone 'Asia/Kolkata'
+    else (s.day + time '09:00' + (interval '1 minute' * ((e.ei * 7 + s.rn * 13) % 26))) at time zone 'Asia/Kolkata'
   end,
   case
     when x.kind = 'missing_out' then null
-    when x.kind = 'half'        then (s.day + time '12:50')
-    else (s.day + time '18:00' + (interval '1 minute' * ((e.ei * 11 + s.rn * 7) % 41)))
+    when x.kind = 'half'        then (s.day + time '12:50') at time zone 'Asia/Kolkata'
+    else (s.day + time '18:00' + (interval '1 minute' * ((e.ei * 11 + s.rn * 7) % 41))) at time zone 'Asia/Kolkata'
   end,
   case when e.ei % 3 = 0 then 'mobile' else 'web' end,
   case when x.kind = 'missing_out' then 'Forgot to check out - needs regularization' end

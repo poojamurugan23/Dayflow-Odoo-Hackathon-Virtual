@@ -15,13 +15,16 @@ type Props = {
   /** profile id -> today's status, from v_daily_attendance. */
   statuses: Record<string, DayStatus>;
   canCreate: boolean;
+  /** Profile ids with an open punch right now — their dot goes magenta. */
+  liveIds?: string[];
 };
 
 /**
  * Toolbar + grid. Filtering is client-side over the already-fetched list, so
  * typing does not round-trip to the server on every keystroke.
  */
-export function EmployeeDirectory({ employees, statuses, canCreate }: Props) {
+export function EmployeeDirectory({ employees, statuses, canCreate, liveIds = [] }: Props) {
+  const live = new Set(liveIds);
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -85,7 +88,11 @@ export function EmployeeDirectory({ employees, statuses, canCreate }: Props) {
         <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((employee) => (
             <li key={employee.id}>
-              <EmployeeCard employee={employee} status={statuses[employee.id]} />
+              <EmployeeCard
+                employee={employee}
+                status={statuses[employee.id]}
+                live={live.has(employee.id)}
+              />
             </li>
           ))}
         </ul>

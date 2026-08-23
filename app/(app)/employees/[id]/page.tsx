@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { ChevronLeft, ShieldOff, TriangleAlert } from "lucide-react";
 
 import { getCurrentUser } from "@/lib/auth";
-import { getTodayStatuses } from "@/lib/attendance";
+import { getOpenPunch, getTodayStatuses } from "@/lib/attendance";
 import { getEmployee, getPrivateInfo, listManagerOptions } from "@/lib/employees";
 import { EmployeeProfile } from "@/components/profile/employee-profile";
 import { ProfileSkeleton } from "@/components/profile/profile-skeleton";
@@ -51,10 +51,13 @@ async function Profile({ id }: { id: string }) {
   const employee = result.employee;
   const isSelf = user.id === employee.id;
 
-  const [info, todayStatuses, managers] = await Promise.all([
+  const [info, todayStatuses, managers, openPunch] = await Promise.all([
     getPrivateInfo(employee.id),
     getTodayStatuses(),
     user.isManager ? listManagerOptions() : Promise.resolve([]),
+    // RLS lets you read your own punches, and a manager read anyone's, so this
+    // is the same permission boundary as the rest of the page.
+    getOpenPunch(employee.id),
   ]);
 
   return (
@@ -62,6 +65,7 @@ async function Profile({ id }: { id: string }) {
       employee={employee}
       info={info}
       todayStatus={todayStatuses.get(employee.id)}
+      live={Boolean(openPunch?.isToday)}
       isSelf={isSelf}
       isManager={user.isManager}
       managers={managers}

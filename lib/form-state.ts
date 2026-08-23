@@ -27,3 +27,6 @@ export const EMPTY_NEW_EMPLOYEE_STATE: NewEmployeeState = { error: null };
 export type EditState = { error: string | null; saved: boolean };
 
 export const EMPTY_EDIT_STATE: EditState = { error: null, saved: false };
+
+/** Result of a punch mutation (check in / out / regularize). */
+export type PunchState = { error: string | null };

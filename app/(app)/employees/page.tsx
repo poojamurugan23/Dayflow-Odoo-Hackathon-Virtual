@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 
 import { getCurrentUser } from "@/lib/auth";
-import { getTodayStatuses, type DayStatus } from "@/lib/attendance";
+import { getOpenPunch, getTodayStatuses, type DayStatus } from "@/lib/attendance";
 import { listEmployees } from "@/lib/employees";
 import { EmployeeDirectory } from "@/components/employee-directory";
 import { EmployeeGridSkeleton } from "@/components/employee-grid-skeleton";
@@ -48,6 +48,12 @@ async function Directory() {
     getTodayStatuses(),
   ]);
 
+  // Only the signed-in user's own live state is known here. Showing every
+  // colleague's live dot would need a second query over open punches; the
+  // derived status already covers "was here today" for everyone else.
+  const openPunch = user ? await getOpenPunch(user.id) : null;
+  const liveIds = openPunch?.isToday && user ? [user.id] : [];
+
   const statuses: Record<string, DayStatus> = {};
   for (const [id, status] of todayStatuses) statuses[id] = status;
 
@@ -56,6 +62,7 @@ async function Directory() {
       employees={employees}
       statuses={statuses}
       canCreate={user?.isManager ?? false}
+      liveIds={liveIds}
     />
   );
 }

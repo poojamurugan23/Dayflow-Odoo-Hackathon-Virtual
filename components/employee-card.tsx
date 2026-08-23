@@ -9,9 +9,11 @@ import type { EmployeeCard as Employee } from "@/lib/employees";
 export function EmployeeCard({
   employee,
   status,
+  live = false,
 }: {
   employee: Employee;
   status: DayStatus | undefined;
+  live?: boolean;
 }) {
   return (
     <Link
@@ -20,7 +22,7 @@ export function EmployeeCard({
     >
       {/* Status pinned top-right, per the wireframe. */}
       <span className="absolute right-3 top-3">
-        <StatusDot status={status} />
+        <StatusDot status={status} live={live} />
       </span>
 
       <Avatar className="size-16">

@@ -18,6 +18,8 @@ type Props = {
   employee: EmployeeDetail;
   info: PrivateInfo | null;
   todayStatus: DayStatus | undefined;
+  /** Session running right now — shows the live magenta. */
+  live: boolean;
   isSelf: boolean;
   isManager: boolean;
   managers: { id: string; label: string }[];
@@ -31,6 +33,7 @@ export function EmployeeProfile({
   employee,
   info,
   todayStatus,
+  live,
   isSelf,
   isManager,
   managers,
@@ -59,7 +62,7 @@ export function EmployeeProfile({
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">{employee.jobPosition ?? "—"}</p>
           <div className="mt-2">
-            <StatusBadge status={todayStatus} />
+            <StatusBadge status={todayStatus} live={live} />
           </div>
         </div>
 
