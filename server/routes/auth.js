@@ -242,7 +242,9 @@ router.post('/approve-hr', async (req, res) => {
           </html>
         `
       };
-      await transporter.sendMail(mailOptions);
+      // Add timeout to prevent Vercel 504 Gateway Timeout
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 4000));
+      await Promise.race([transporter.sendMail(mailOptions), timeoutPromise]);
     } catch (emailError) {
       console.error('Failed to send HR approval email:', emailError);
     }
