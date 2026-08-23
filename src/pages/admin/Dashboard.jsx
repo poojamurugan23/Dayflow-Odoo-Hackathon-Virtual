@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import API_BASE from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { Users, UserCheck, UserMinus, FileClock, ArrowRight, Clock, LogIn, LogOut } from 'lucide-react';
+import { Users, UserCheck, UserMinus, FileClock, ArrowRight, Clock, LogIn, LogOut, Video, Info } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,6 +20,8 @@ export function AdminDashboard() {
   
   const [pendingRequests, setPendingRequests] = useState([]);
   const [myAttendance, setMyAttendance] = useState(null);
+  const [upcomingMeetings, setUpcomingMeetings] = useState([]);
+  const [recentComplaints, setRecentComplaints] = useState([]);
 
   const fetchDashboardData = async () => {
     try {
@@ -53,6 +55,40 @@ export function AdminDashboard() {
         const attData = await resAtt.json();
         const mine = attData.find(a => a.employee_id?._id === user?.id || a.employee_id === user?.id);
         setMyAttendance(mine || null);
+      }
+
+      // Fetch meetings
+      const resMeetings = await fetch(`${API_BASE}/api/data/meetings`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resMeetings.ok) {
+        const data = await resMeetings.json();
+        const now = new Date();
+        const upcoming = data.filter(m => {
+          if (!m.date || !m.time) return false;
+          const [hours, minutes] = m.time.split(':');
+          const meetingDate = new Date(m.date);
+          meetingDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+          return meetingDate >= now;
+        }).sort((a, b) => {
+          const aDate = new Date(a.date);
+          const [aH, aM] = a.time.split(':');
+          aDate.setHours(parseInt(aH, 10), parseInt(aM, 10), 0, 0);
+          const bDate = new Date(b.date);
+          const [bH, bM] = b.time.split(':');
+          bDate.setHours(parseInt(bH, 10), parseInt(bM, 10), 0, 0);
+          return aDate - bDate;
+        });
+        setUpcomingMeetings(upcoming);
+      }
+
+      // Fetch complaints
+      const resComplaints = await fetch(`${API_BASE}/api/data/complaints`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resComplaints.ok) {
+        const data = await resComplaints.json();
+        setRecentComplaints(data.slice(0, 5));
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data');
@@ -211,35 +247,83 @@ export function AdminDashboard() {
       </div>
 
       {/* Pending Leave Requests */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-[#171923] font-serif">Pending Leave Requests</h3>
-          <button onClick={() => navigate('/admin/timeoff')} className="text-xs font-medium text-[#502D55] hover:text-[#935073] flex items-center gap-1">View All <ArrowRight size={14} /></button>
-        </div>
-        {pendingRequests.length > 0 ? (
-          <div className="divide-y divide-gray-50">
-            {pendingRequests.map(l => (
-              <div key={l._id} className="px-5 py-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-[#502D55] text-white flex items-center justify-center text-xs font-bold">
-                    {l.employee_id?.name ? l.employee_id.name.split(' ').map(n => n[0]).join('').substring(0,2) : 'U'}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-[#171923]">{l.employee_id?.name || 'Unknown Employee'}</p>
-                    <p className="text-xs text-[#6B7280]">
-                      {l.type} · {new Date(l.start_date).toLocaleDateString()} to {new Date(l.end_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 animate-pulse border border-amber-200">
-                  Pending
-                </span>
-              </div>
-            ))}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-6">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-base font-semibold text-[#171923] font-serif">Pending Leave Requests</h3>
+            <button onClick={() => navigate('/admin/timeoff')} className="text-xs font-medium text-[#502D55] hover:text-[#935073] flex items-center gap-1">View All <ArrowRight size={14} /></button>
           </div>
-        ) : (
-          <div className="p-8 text-center text-sm text-[#6B7280]">No pending requests currently.</div>
-        )}
+          {pendingRequests.length > 0 ? (
+            <div className="divide-y divide-gray-50">
+              {pendingRequests.map(l => (
+                <div key={l._id} className="px-5 py-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-[#502D55] text-white flex items-center justify-center text-xs font-bold">
+                      {l.employee_id?.name ? l.employee_id.name.split(' ').map(n => n[0]).join('').substring(0,2) : 'U'}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[#171923]">{l.employee_id?.name || 'Unknown Employee'}</p>
+                      <p className="text-xs text-[#6B7280]">
+                        {l.type} ? {new Date(l.start_date).toLocaleDateString()} to {new Date(l.end_date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 animate-pulse border border-amber-200">
+                    Pending
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-sm text-[#6B7280]">No pending requests currently.</div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-base font-semibold text-[#171923] font-serif flex items-center gap-2"><Video size={18} className="text-[#502D55]"/> Upcoming Meetings</h3>
+          </div>
+          {upcomingMeetings.length > 0 ? (
+            <div className="divide-y divide-gray-50">
+              {upcomingMeetings.slice(0, 5).map(m => (
+                <div key={m._id} className="px-5 py-4 hover:bg-gray-50/50 transition-colors">
+                  <p className="text-sm font-medium text-[#171923] truncate">{m.title}</p>
+                  <p className="text-xs text-[#6B7280] mt-1 flex items-center gap-2">
+                    <Clock size={12}/> {m.time} ? {new Date(m.date).toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-sm text-[#6B7280]">No upcoming meetings scheduled.</div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-base font-semibold text-[#171923] font-serif flex items-center gap-2"><Info size={18} className="text-[#502D55]"/> Recent Tickets</h3>
+          </div>
+          {recentComplaints.length > 0 ? (
+            <div className="divide-y divide-gray-50">
+              {recentComplaints.slice(0, 5).map(c => (
+                <div key={c._id} className="px-5 py-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-[#171923] truncate">{c.subject}</p>
+                    <p className="text-xs text-[#6B7280] mt-1">{c.user_id?.name} ? {new Date(c.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                    c.status === 'Resolved' ? 'bg-green-100 text-green-700' : 
+                    c.status === 'In Progress' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {c.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-sm text-[#6B7280]">No recent tickets.</div>
+          )}
+        </div>
       </div>
     </div>
   );

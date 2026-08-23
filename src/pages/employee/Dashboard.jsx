@@ -3,7 +3,7 @@ import API_BASE, { getAvatarUrl } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   LogIn, LogOut as LogOutIcon, Plane,
-  Mail, Phone, Briefcase, Search, Loader2, Clock
+  Mail, Phone, Briefcase, Search, Loader2, Clock, Video, Info
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -70,6 +70,7 @@ export function EmployeeDashboard() {
   const [attendanceData, setAttendanceData] = useState([]);
   const [totalMonthHours, setTotalMonthHours] = useState(0);
   const [prevComplaints, setPrevComplaints] = useState([]);
+  const [upcomingMeetings, setUpcomingMeetings] = useState([]);
 
   const elapsed = useElapsed(checkInTimestamp);
   const getToken = () => localStorage.getItem('dayflow_token');
@@ -204,15 +205,49 @@ export function EmployeeDashboard() {
     }
   };
 
+  const fetchUpcomingMeetings = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/data/meetings`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const now = new Date();
+        const upcoming = data.filter(m => {
+          if (!m.date || !m.time) return false;
+          const [hours, minutes] = m.time.split(':');
+          const meetingDate = new Date(m.date);
+          meetingDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+          return meetingDate >= now;
+        }).sort((a, b) => {
+          const aDate = new Date(a.date);
+          const [aH, aM] = a.time.split(':');
+          aDate.setHours(parseInt(aH, 10), parseInt(aM, 10), 0, 0);
+
+          const bDate = new Date(b.date);
+          const [bH, bM] = b.time.split(':');
+          bDate.setHours(parseInt(bH, 10), parseInt(bM, 10), 0, 0);
+
+          return aDate - bDate;
+        });
+        setUpcomingMeetings(upcoming);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
     fetchEmployees(true);
     fetchMyAttendance();
     fetchMyComplaints();
+    fetchUpcomingMeetings();
     const interval = setInterval(() => {
       fetchMyAttendance();
       fetchEmployees(false);
       fetchMyComplaints();
+      fetchUpcomingMeetings();
     }, 5000);
     return () => clearInterval(interval);
   }, [user]);
@@ -392,6 +427,56 @@ export function EmployeeDashboard() {
             </div>
           )}
         </div>
+        {/* Upcoming Meetings & Recent Tickets */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Video size={18} className="text-[#502D55]" /> Upcoming Meetings
+            </h3>
+            {upcomingMeetings.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-6">No upcoming meetings scheduled.</p>
+            ) : (
+              <div className="space-y-3">
+                {upcomingMeetings.slice(0, 5).map(m => (
+                  <div key={m._id} className="p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                    <p className="font-semibold text-sm text-[#171923] truncate">{m.title}</p>
+                    <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                      <span className="flex items-center gap-1"><Clock size={12} /> {m.time}</span>
+                      <span>{new Date(m.date).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Info size={18} className="text-[#502D55]" /> My Recent Tickets
+            </h3>
+            {prevComplaints.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-6">No recent tickets raised.</p>
+            ) : (
+              <div className="space-y-3">
+                {prevComplaints.slice(0, 5).map(c => (
+                  <div key={c._id} className="p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors flex justify-between items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm text-[#171923] truncate">{c.subject}</p>
+                      <p className="text-xs text-gray-500 mt-1">{new Date(c.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                      c.status === 'Resolved' ? 'bg-green-100 text-green-700' : 
+                      c.status === 'In Progress' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {c.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
 
       {/* ── RIGHT: Check-In / Check-Out Systray ──────────── */}

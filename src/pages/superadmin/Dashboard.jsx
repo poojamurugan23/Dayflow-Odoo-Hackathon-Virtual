@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import API_BASE from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { Users, UserCheck, UserX, Calendar, Clock, Bell, Info } from 'lucide-react';
+import { Users, UserCheck, UserX, Calendar, Clock, Bell, Info, Video } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 
@@ -34,6 +34,8 @@ export function SuperAdminDashboard() {
   });
   
   const [notifications, setNotifications] = useState([]);
+  const [upcomingMeetings, setUpcomingMeetings] = useState([]);
+  const [recentComplaints, setRecentComplaints] = useState([]);
 
   const fetchDashboardData = async () => {
     try {
@@ -56,6 +58,40 @@ export function SuperAdminDashboard() {
       if (resNotif.ok) {
         const data = await resNotif.json();
         setNotifications(data.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 10));
+      }
+
+      // Fetch meetings
+      const resMeetings = await fetch(`${API_BASE}/api/data/meetings`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resMeetings.ok) {
+        const data = await resMeetings.json();
+        const now = new Date();
+        const upcoming = data.filter(m => {
+          if (!m.date || !m.time) return false;
+          const [hours, minutes] = m.time.split(':');
+          const meetingDate = new Date(m.date);
+          meetingDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+          return meetingDate >= now;
+        }).sort((a, b) => {
+          const aDate = new Date(a.date);
+          const [aH, aM] = a.time.split(':');
+          aDate.setHours(parseInt(aH, 10), parseInt(aM, 10), 0, 0);
+          const bDate = new Date(b.date);
+          const [bH, bM] = b.time.split(':');
+          bDate.setHours(parseInt(bH, 10), parseInt(bM, 10), 0, 0);
+          return aDate - bDate;
+        });
+        setUpcomingMeetings(upcoming);
+      }
+
+      // Fetch complaints
+      const resComplaints = await fetch(`${API_BASE}/api/data/complaints`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resComplaints.ok) {
+        const data = await resComplaints.json();
+        setRecentComplaints(data.slice(0, 5));
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data');
@@ -162,32 +198,88 @@ export function SuperAdminDashboard() {
         </div>
       </div>
 
-      {/* Real-Time Notifications Panel */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-[#171923] font-serif flex items-center gap-2">
-            <Bell size={18} className="text-[#502D55]" />
-            Real-Time Notifications
-          </h3>
-        </div>
-        {notifications.length > 0 ? (
-          <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
-            {notifications.map(n => (
-              <div key={n._id} className="px-5 py-4 flex gap-4 hover:bg-gray-50/50 transition-colors">
-                <div className={`h-10 w-10 shrink-0 rounded-full flex items-center justify-center ${n.read ? 'bg-gray-100 text-gray-500' : 'bg-amber-100 text-amber-600'}`}>
-                  {n.title.toLowerCase().includes('complaint') ? <Info size={18} /> : <Bell size={18} />}
-                </div>
-                <div>
-                  <p className={`text-sm ${n.read ? 'text-gray-600 font-medium' : 'text-[#171923] font-bold'}`}>{n.title}</p>
-                  <p className="text-xs text-gray-500 mt-1">{n.message}</p>
-                  <p className="text-[10px] text-gray-400 mt-2">{new Date(n.createdAt).toLocaleString()}</p>
-                </div>
-              </div>
-            ))}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-6">
+        {/* Real-Time Notifications Panel */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden lg:col-span-1">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-base font-semibold text-[#171923] font-serif flex items-center gap-2">
+              <Bell size={18} className="text-[#502D55]" />
+              Notifications
+            </h3>
           </div>
-        ) : (
-          <div className="p-8 text-center text-sm text-[#6B7280]">No recent notifications.</div>
-        )}
+          {notifications.length > 0 ? (
+            <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
+              {notifications.map(n => (
+                <div key={n._id} className="px-5 py-4 flex gap-4 hover:bg-gray-50/50 transition-colors">
+                  <div className={`h-10 w-10 shrink-0 rounded-full flex items-center justify-center ${n.read ? 'bg-gray-100 text-gray-500' : 'bg-amber-100 text-amber-600'}`}>
+                    {n.title.toLowerCase().includes('complaint') ? <Info size={18} /> : <Bell size={18} />}
+                  </div>
+                  <div>
+                    <p className={`text-sm ${n.read ? 'text-gray-600 font-medium' : 'text-[#171923] font-bold'}`}>{n.title}</p>
+                    <p className="text-xs text-gray-500 mt-1">{n.message}</p>
+                    <p className="text-[10px] text-gray-400 mt-2">{new Date(n.createdAt).toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-sm text-[#6B7280]">No recent notifications.</div>
+          )}
+        </div>
+
+        {/* Upcoming Meetings */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden lg:col-span-1">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-base font-semibold text-[#171923] font-serif flex items-center gap-2">
+              <Video size={18} className="text-[#502D55]" />
+              Upcoming Meetings
+            </h3>
+          </div>
+          {upcomingMeetings.length > 0 ? (
+            <div className="divide-y divide-gray-50">
+              {upcomingMeetings.slice(0, 5).map(m => (
+                <div key={m._id} className="px-5 py-4 hover:bg-gray-50/50 transition-colors">
+                  <p className="text-sm font-medium text-[#171923] truncate">{m.title}</p>
+                  <p className="text-xs text-[#6B7280] mt-1 flex items-center gap-2">
+                    <Clock size={12}/> {m.time} ? {new Date(m.date).toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-sm text-[#6B7280]">No upcoming meetings.</div>
+          )}
+        </div>
+
+        {/* Recent Tickets */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden lg:col-span-1">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-base font-semibold text-[#171923] font-serif flex items-center gap-2">
+              <Info size={18} className="text-[#502D55]" />
+              Recent Tickets
+            </h3>
+          </div>
+          {recentComplaints.length > 0 ? (
+            <div className="divide-y divide-gray-50">
+              {recentComplaints.slice(0, 5).map(c => (
+                <div key={c._id} className="px-5 py-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-[#171923] truncate">{c.subject}</p>
+                    <p className="text-xs text-[#6B7280] mt-1">{c.user_id?.name} ? {new Date(c.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                    c.status === 'Resolved' ? 'bg-green-100 text-green-700' : 
+                    c.status === 'In Progress' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {c.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-sm text-[#6B7280]">No recent tickets.</div>
+          )}
+        </div>
       </div>
     </div>
   );
