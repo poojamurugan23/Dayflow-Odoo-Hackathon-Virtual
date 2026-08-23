@@ -289,7 +289,7 @@ export function AdminDashboard() {
                 <div key={m._id} className="px-5 py-4 hover:bg-gray-50/50 transition-colors">
                   <p className="text-sm font-medium text-[#171923] truncate">{m.title}</p>
                   <p className="text-xs text-[#6B7280] mt-1 flex items-center gap-2">
-                    <Clock size={12}/> {m.time} ? {new Date(m.date).toLocaleDateString()}
+                    <Clock size={12}/> {m.time} - {new Date(m.date).toLocaleDateString()}
                   </p>
                 </div>
               ))}
@@ -309,7 +309,7 @@ export function AdminDashboard() {
                 <div key={c._id} className="px-5 py-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-[#171923] truncate">{c.subject}</p>
-                    <p className="text-xs text-[#6B7280] mt-1">{c.user_id?.name} ? {new Date(c.createdAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-[#6B7280] mt-1">{c.user_id?.name} - {new Date(c.createdAt).toLocaleDateString()}</p>
                   </div>
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
                     c.status === 'Resolved' ? 'bg-green-100 text-green-700' : 
