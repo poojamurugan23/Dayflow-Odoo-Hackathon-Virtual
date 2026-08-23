@@ -26,9 +26,7 @@ export function Landing() {
       <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-[#502D55] p-2 rounded-xl">
-              <img src="/odoo_logo.png" alt="Odoo Logo" className="h-6 w-auto brightness-0 invert" />
-            </div>
+            <img src="/odoo_logo.png" alt="Odoo Logo" className="h-8 w-auto object-contain" />
             <span className="font-serif text-2xl font-bold tracking-tight text-gray-900">Dayflow</span>
           </div>
           <div className="flex items-center gap-6">
@@ -47,7 +45,7 @@ export function Landing() {
       </nav>
 
       {/* Hero Section */}
-      <div className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+      <div className="relative pt-24 pb-12 lg:pt-32 lg:pb-16 overflow-hidden">
         {/* Background Gradients */}
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#f1e1f7] via-white to-white"></div>
         <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 w-[800px] h-[600px] bg-[#935073] opacity-[0.08] blur-[100px] rounded-full pointer-events-none"></div>
@@ -59,14 +57,14 @@ export function Landing() {
             Odoo Hackathon 2026 Innovation
           </div>
           
-          <h1 className="text-5xl lg:text-7xl font-extrabold text-gray-900 tracking-tight leading-[1.1] mb-8 font-serif">
+          <h1 className="text-4xl lg:text-6xl font-extrabold text-gray-900 tracking-tight leading-[1.1] mb-6 font-serif">
             Your Workforce, <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#502D55] to-[#935073]">
               Perfectly Aligned.
             </span>
           </h1>
           
-          <p className="max-w-2xl mx-auto text-xl text-gray-600 mb-10 leading-relaxed font-medium">
+          <p className="max-w-2xl mx-auto text-lg text-gray-600 mb-8 leading-relaxed font-medium">
             Elevate your company's HR experience with Dayflow. From seamless payroll management to intuitive attendance tracking, we bring harmony to your workday.
           </p>
           
@@ -81,9 +79,9 @@ export function Landing() {
           </div>
           
           {/* Dashboard Preview Image/Mockup */}
-          <div className="mt-20 relative mx-auto max-w-5xl">
+          <div className="mt-12 relative mx-auto max-w-4xl">
             <div className="rounded-2xl border border-gray-200/60 bg-white/50 backdrop-blur-xl p-2 shadow-2xl overflow-hidden ring-1 ring-black/5">
-              <div className="rounded-xl border border-gray-100 bg-gray-50 h-[400px] lg:h-[600px] w-full relative overflow-hidden flex items-center justify-center">
+              <div className="rounded-xl border border-gray-100 bg-gray-50 py-10 w-full relative overflow-hidden flex items-center justify-center">
                 {/* Abstract UI representation */}
                 <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
                 <div className="relative z-10 flex flex-col items-center gap-6">
@@ -113,11 +111,11 @@ export function Landing() {
       </div>
 
       {/* Features Section */}
-      <div className="py-24 bg-gray-50">
+      <div className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold font-serif text-gray-900 mb-4">Everything you need to manage your team</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto text-lg">A complete suite of tools designed to automate HR processes and empower your employees.</p>
+          <div className="text-center mb-10">
+            <h2 className="text-2xl lg:text-3xl font-bold font-serif text-gray-900 mb-3">Everything you need to manage your team</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto text-base">A complete suite of tools designed to automate HR processes and empower your employees.</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -152,7 +150,7 @@ export function Landing() {
       </div>
 
       {/* Trust Section */}
-      <div className="border-t border-gray-100 py-16 bg-white">
+      <div className="border-t border-gray-100 py-8 bg-white">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-2">
             <ShieldCheck className="text-green-500" size={24} />
@@ -170,12 +168,10 @@ export function Landing() {
       </div>
       
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
+      <footer className="bg-gray-900 text-gray-400 py-8">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between">
           <div className="flex items-center gap-3 mb-4 md:mb-0">
-            <div className="bg-white/10 p-1.5 rounded-lg">
-              <img src="/odoo_logo.png" alt="Odoo" className="h-5 brightness-0 invert" />
-            </div>
+            <img src="/odoo_logo.png" alt="Odoo" className="h-5 object-contain brightness-0 invert" />
             <span className="font-serif font-bold text-white text-lg">Dayflow</span>
           </div>
           <p className="text-sm">&copy; {new Date().getFullYear()} Odoo India Hackathon. All rights reserved.</p>
