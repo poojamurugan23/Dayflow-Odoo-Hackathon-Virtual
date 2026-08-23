@@ -103,7 +103,10 @@ app.post('/api/import-all', async (req, res) => {
 app.use(express.static(path.join(__dirname, '../dist')));
 
 // Anything that doesn't match the API routes should send back the index.html file
-app.get('*', (req, res) => {
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
