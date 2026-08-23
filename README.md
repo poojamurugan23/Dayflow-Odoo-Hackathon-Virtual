@@ -69,6 +69,12 @@ Supabase Dashboard → **SQL Editor** → **New query** → paste all of
 Creates 13 tables, 2 enums, `generate_login_id()`, the three derivation views,
 and enables RLS with 6 policies.
 
+Then paste `supabase/migrations/0002_rls_remaining_tables.sql` and Run it too.
+0001 (from the build plan) enables RLS on only 4 of the 13 tables and leaves
+the derivation views running as their owner, which left every salary readable
+by any signed-in employee and made all three views ignore RLS entirely. 0002
+closes both. Do not skip it.
+
 ### 2. Create the auth users
 
 ```bash
