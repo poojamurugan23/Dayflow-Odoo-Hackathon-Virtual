@@ -33,7 +33,7 @@ export function Login() {
   };
 
   const demoProfiles = [
-    { name: 'Admin User', id: 'admin@dayflow.demo', pass: 'admin123', role: 'Admin' },
+    { name: 'Admin User', id: 'OIPRSH20220001', pass: 'Demo@123', role: 'Admin' },
     { name: 'Sarah Connor', id: 'OISACO20260002', pass: 'password123', role: 'Employee' },
     { name: 'David Miller', id: 'OIDAMI20260003', pass: 'password123', role: 'Employee' }
   ];
